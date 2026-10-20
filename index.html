@@ -141,6 +141,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
     <h1>Mesa de Áudio</h1>
     <p class="lead">Seis canais e um Master. Grave, edite, mixe e exporte. Todos os controles são botões, campos deslizantes e listas nativos, pensados para NVDA e TalkBack.</p>
     <nav class="jump" aria-label="Ir para a seção">
+      <a href="#h-proj">Projetos</a>
       <a href="#h-rec">Gravação</a>
       <a href="#h-met">Metrônomo</a>
       <a href="#h-ed">Edição</a>
@@ -176,6 +177,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
     </ul>
   </details>
 
+  <section class="panel" id="projSec" aria-labelledby="h-proj"></section>
   <section class="panel" id="recSec" aria-labelledby="h-rec"></section>
   <section class="panel" id="metSec" aria-labelledby="h-met"></section>
   <section class="panel" id="edSec" aria-labelledby="h-ed"></section>
@@ -196,7 +198,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 
   <section class="master" id="masterSec" aria-labelledby="h-master"></section>
 
-  <p class="note">Em construção: afinador de voz, salvar e abrir projetos, exportar em MP3.</p>
+  <p class="note">Em construção: afinador de voz e exportação em MP3.</p>
 </div>
 
 <div id="avisos" class="sr-only" role="status" aria-live="polite"></div>
@@ -308,13 +310,47 @@ function makeCurve(d){
   for(var i=0;i<n;i++){var x=i*2/(n-1)-1;a[i]=Math.tanh(k*x)/norm}
   return a;
 }
+function toI16(f){var o=new Int16Array(f.length);for(var i=0;i<f.length;i++){var x=f[i];x=x>1?1:x<-1?-1:x;o[i]=x<0?x*32768:x*32767}return o}
+function fromI16(a){var o=new Float32Array(a.length);for(var i=0;i<a.length;i++){var v=a[i];o[i]=v<0?v/32768:v/32767}return o}
+function packProject(meta,chs){
+  var info=chs.map(function(c){return c?{sr:c.sr,nch:c.pcm.length,len:c.pcm[0].length,name:c.name||'',edited:!!c.edited}:null});
+  var hb=new TextEncoder().encode(JSON.stringify({meta:meta,ch:info}));
+  var hl=hb.length+(hb.length%2),total=10+hl;
+  info.forEach(function(c){if(c)total+=c.nch*c.len*2});
+  var ab=new ArrayBuffer(total),u8=new Uint8Array(ab),dv=new DataView(ab);
+  u8.set([77,69,83,65,48,49],0);
+  dv.setUint32(6,hl,true);
+  u8.set(hb,10);
+  for(var k=hb.length;k<hl;k++)u8[10+k]=32;
+  var o=10+hl;
+  chs.forEach(function(c){if(!c)return;c.pcm.forEach(function(p){u8.set(new Uint8Array(p.buffer,p.byteOffset,p.byteLength),o);o+=p.byteLength})});
+  return ab;
+}
+function unpackProject(ab){
+  var u8=new Uint8Array(ab);
+  if(u8.length<10||String.fromCharCode.apply(null,u8.subarray(0,6))!=='MESA01')return null;
+  var hl=new DataView(ab).getUint32(6,true);
+  if(10+hl>u8.length)return null;
+  var h=JSON.parse(new TextDecoder().decode(u8.subarray(10,10+hl)));
+  var o=10+hl;
+  var chs=h.ch.map(function(c){
+    if(!c)return null;
+    var pcm=[];
+    for(var k=0;k<c.nch;k++){var n=c.len*2;if(o+n>u8.length)throw new Error('arquivo cortado');pcm.push(new Int16Array(ab.slice(o,o+n)));o+=n}
+    return {sr:c.sr,pcm:pcm,name:c.name,edited:c.edited};
+  });
+  return {meta:h.meta,chs:chs};
+}
 /*PURE-END*/
 
 const N=6;
 let ctx=null,live=null;
 const region=document.getElementById('avisos');
-function say(t){region.textContent='';setTimeout(()=>{region.textContent=t},40)}
+let quiet=false,dirty=false;
+function say(t){if(quiet)return;region.textContent='';setTimeout(()=>{region.textContent=t},40)}
 const $=id=>document.getElementById(id);
+const SL={},SE={},TG={};
+const KEEP_SEL=['mcomp','mrevt','mbar','recCh','recCount','edCh','edStep'];
 
 /* ---------- helpers ---------- */
 function h(tag,props,...kids){
@@ -330,7 +366,9 @@ function h(tag,props,...kids){
 }
 function btn(text,fn,cls,extra){
   const b=h('button',Object.assign({type:'button',class:cls||'btn',text:text},extra||{}));
-  b.addEventListener('click',fn);return b;
+  b.addEventListener('click',fn);
+  if(extra&&extra.id)TG[extra.id]=b;
+  return b;
 }
 const num=v=>String(Math.round(Math.abs(v)*10)/10).replace('.',',');
 const sDb=(v,fl)=>(fl!=null&&v<=fl)?'silêncio':v===0?'zero decibéis':(v>0?'mais ':'menos ')+num(v)+(Math.abs(v)===1?' decibel':' decibéis');
@@ -360,6 +398,7 @@ function slider(o){
     o.onChange(v);
     if(speak)say(name+': '+sp);
   }
+  SL[o.id]=apply;
   input.addEventListener('input',()=>apply(+input.value,false));
   minus.addEventListener('click',()=>apply(+input.value-o.btn,true));
   plus.addEventListener('click',()=>apply(+input.value+o.btn,true));
@@ -372,7 +411,7 @@ function slider(o){
 function selectField(id,label,opts,val,on){
   const s=h('select',{id});
   opts.forEach(p=>s.append(h('option',{value:p[0],text:p[1]})));
-  s.value=val;
+  s.value=val;SE[id]=s;
   s.addEventListener('change',()=>on(s.value,s.options[s.selectedIndex].text));
   const w=h('div',{class:'field'},h('label',{for:id,text:label}),s);
   w.sel=s;return w;
@@ -628,7 +667,7 @@ function commit(c,newBuf,desc){
   c.undo.push({buf:c.buffer,desc});
   if(c.undo.length>30)c.undo.shift();
   c.redo=[];
-  c.buffer=newBuf;c.edited=true;
+  c.buffer=newBuf;c.edited=true;dirty=true;
   refreshLabel(c);
   if(offset>dur())offset=dur();
   refreshPlayback();showTime();
@@ -653,7 +692,7 @@ function loadFile(c,file,quiet){
   if(playing)pause(false);
   c.fileEl.textContent='Carregando '+file.name+'…';
   return file.arrayBuffer().then(ab=>ctx.decodeAudioData(ab)).then(buf=>{
-    c.buffer=buf;c.name=file.name;c.edited=false;c.undo=[];c.redo=[];
+    c.buffer=buf;c.name=file.name;c.edited=false;c.undo=[];c.redo=[];dirty=true;
     refreshLabel(c);offset=0;showTime();
     if(!quiet)say(c.who+' carregado: '+file.name+', '+Math.round(buf.duration)+' segundos');
     return true;
@@ -717,7 +756,7 @@ function genDemo(){
   for(let k=0;k<16;k++)if(k%4===1||k%4===3)note(b,k*beat,.25,t=>.5*(Math.random()*2-1)*Math.exp(-t*22));
   out.push(['palmas',b]);
   chans.forEach((c,i)=>{c.buffer=out[i][1];c.name='Exemplo: '+out[i][0];c.edited=false;c.undo=[];c.redo=[];refreshLabel(c)});
-  offset=0;showTime();
+  offset=0;showTime();dirty=true;
   say('Sons de exemplo carregados nos seis canais. Aperte Tocar.');
 }
 $('btnDemo').addEventListener('click',genDemo);
@@ -1026,11 +1065,11 @@ function buildChannel(i){
   const mute=btn('Mudo',()=>{
     c.s.mute=!c.s.mute;mute.setAttribute('aria-pressed',String(c.s.mute));lvGates();
     say(who+(c.s.mute?' mudo':' com som'));
-  },'btn mute',{'aria-pressed':'false','aria-label':who+', mudo'});
+  },'btn mute',{id:'mu'+p,'aria-pressed':'false','aria-label':who+', mudo'});
   const solo=btn('Solo',()=>{
     c.s.solo=!c.s.solo;solo.setAttribute('aria-pressed',String(c.s.solo));lvGates();
     say(c.s.solo?who+' em solo':who+' solo desativado');
-  },'btn',{'aria-pressed':'false','aria-label':who+', solo'});
+  },'btn',{id:'so'+p,'aria-pressed':'false','aria-label':who+', solo'});
   c.muteBtn=mute;c.soloBtn=solo;
 
   const preBox=h('details',{class:'fx'},
@@ -1046,7 +1085,7 @@ function buildChannel(i){
   const dOn=btn('Delay ligado',()=>{
     c.s.dOn=!c.s.dOn;dOn.setAttribute('aria-pressed',String(c.s.dOn));lvCh(c);
     say(who+(c.s.dOn?', delay ligado':', delay desligado'));
-  },'btn',{'aria-pressed':'false','aria-label':who+', delay ligado'});
+  },'btn',{id:'do'+p,'aria-pressed':'false','aria-label':who+', delay ligado'});
   const dBox=h('details',{class:'fx'},
     h('summary',{'aria-label':who+', delay',text:'Delay'}),
     h('div',{},dOn,
@@ -1056,7 +1095,7 @@ function buildChannel(i){
   const cOn=btn('Chorus ligado',()=>{
     c.s.cOn=!c.s.cOn;cOn.setAttribute('aria-pressed',String(c.s.cOn));lvCh(c);
     say(who+(c.s.cOn?', chorus ligado':', chorus desligado'));
-  },'btn',{'aria-pressed':'false','aria-label':who+', chorus ligado'});
+  },'btn',{id:'co'+p,'aria-pressed':'false','aria-label':who+', chorus ligado'});
   const cBox=h('details',{class:'fx'},
     h('summary',{'aria-label':who+', chorus',text:'Chorus'}),
     h('div',{},cOn,
@@ -1119,7 +1158,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
   const withPlay=btn('Tocar junto com a reprodução e a gravação',()=>{
     MT.withPlay=!MT.withPlay;withPlay.setAttribute('aria-pressed',String(MT.withPlay));
     say(MT.withPlay?'O metrônomo vai tocar junto com a reprodução e a gravação.':'Metrônomo independente.');
-  },'btn',{'aria-pressed':'false'});
+  },'btn',{id:'mwp','aria-pressed':'false'});
   sec.append(h('div',{class:'pgrid'},
     h('div',{class:'pcol'},metBtn,bpm.wrap,h('div',{class:'field'},h('label',{for:'mbpmN',text:'Digitar andamento'}),bpmIn)),
     h('div',{class:'pcol'},bar,vol.wrap,withPlay)));
@@ -1202,7 +1241,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
   const revBtn=btn('Reverb ligado',()=>{
     M.revOn=!M.revOn;revBtn.setAttribute('aria-pressed',String(M.revOn));lvMaster();
     say(M.revOn?'Master, reverb ligado':'Master, reverb desligado');
-  },'btn',{'aria-pressed':'false','aria-label':'Master, reverb ligado'});
+  },'btn',{id:'mrevb','aria-pressed':'false','aria-label':'Master, reverb ligado'});
   const revType=selectField('mrevt','Tipo de reverb',[['sala','Sala'],['estudio','Estúdio'],['igreja','Igreja']],'sala',(v,t)=>{
     M.revType=v;if(live)live.m.conv.buffer=live.irs[v];say('Master, reverb: '+t);
   });
@@ -1227,6 +1266,182 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     h('div',{class:'mcol'},h('h3',{text:'Exportar'}),h('p',{class:'hint',text:'Gera um arquivo WAV com todos os canais e o Master, e baixa no aparelho.'}),exp)
   ));
 })();
+
+/* ---------- projetos: salvar, abrir, exportar, importar ---------- */
+let curProject='',confirmKey='',confirmTimer=0,nameInp=null,listSel=null,dbp=null;
+function confirmTwice(key,msg){
+  if(confirmKey===key){confirmKey='';clearTimeout(confirmTimer);return true}
+  confirmKey=key;clearTimeout(confirmTimer);confirmTimer=setTimeout(()=>{confirmKey=''},12000);
+  say(msg);return false;
+}
+const hasAudio=()=>chans.some(c=>c.buffer);
+const confirmDirty=key=>(!dirty||!hasAudio())||confirmTwice(key,'Há alterações não salvas. Aperte o mesmo botão de novo para continuar e substituir o que está na mesa.');
+const idb=()=>dbp||(dbp=new Promise((res,rej)=>{
+  const rq=indexedDB.open('mesa-audio',1);
+  rq.onupgradeneeded=()=>{const d=rq.result;d.createObjectStore('meta',{keyPath:'name'});d.createObjectStore('data',{keyPath:'name'})};
+  rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);
+}).catch(e=>{dbp=null;throw e}));
+function dbRun(db,stores,mode,fn){
+  return new Promise((res,rej)=>{
+    const t=db.transaction(stores,mode);let r;
+    try{r=fn(t)}catch(e){rej(e);return}
+    t.oncomplete=()=>res(r&&r.result);
+    t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);
+  });
+}
+const dbList=()=>idb().then(db=>dbRun(db,['meta'],'readonly',t=>t.objectStore('meta').getAll()));
+const fmtDate=ms=>new Date(ms).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+
+function captureProject(name){
+  const sliders={},selects={},toggles={};
+  Object.keys(SL).forEach(id=>{const e=$(id);if(e)sliders[id]=+e.value});
+  KEEP_SEL.forEach(id=>{if(SE[id])selects[id]=SE[id].value});
+  Object.keys(TG).forEach(id=>{toggles[id]=TG[id].getAttribute('aria-pressed')==='true'});
+  const chs=chans.map(c=>c.buffer?{sr:c.buffer.sampleRate,pcm:dataOf(c.buffer).map(d=>toI16(d)),name:c.name,edited:c.edited}:null);
+  let secs=0;chs.forEach(c=>{if(c)secs=Math.max(secs,c.pcm[0].length/c.sr)});
+  return {meta:{name,savedAt:Date.now(),secs,sliders,selects,toggles},chs};
+}
+async function resampleTo(buf,sr){
+  if(buf.sampleRate===sr)return buf;
+  const oc=new OfflineAudioContext(buf.numberOfChannels,Math.max(1,Math.ceil(buf.duration*sr)),sr);
+  const s=oc.createBufferSource();s.buffer=buf;s.connect(oc.destination);s.start();
+  return oc.startRendering();
+}
+async function applyProject(meta,chs){
+  if(!Array.isArray(chs)||chs.length!==N)throw new Error('canais');
+  if(playing)pause(false);
+  stopMetro();MT.auto=false;
+  ensureCtx();
+  const bufs=[];
+  for(const x of chs){
+    bufs.push(x?await resampleTo(bufFromData(x.pcm.map(d=>fromI16(d)),x.sr),ctx.sampleRate):null);
+  }
+  quiet=true;
+  try{
+    chans.forEach((c,i)=>{
+      c.undo=[];c.redo=[];
+      c.buffer=bufs[i];c.name=chs[i]?(chs[i].name||''):'';c.edited=chs[i]?!!chs[i].edited:false;
+      refreshLabel(c);
+    });
+    Object.keys(meta.sliders||{}).forEach(id=>{if(SL[id])SL[id](meta.sliders[id],false)});
+    Object.keys(meta.selects||{}).forEach(id=>{
+      const s=SE[id];
+      if(s&&Array.from(s.options).some(o=>o.value===meta.selects[id])){s.value=meta.selects[id];s.dispatchEvent(new Event('change'))}
+    });
+    Object.keys(meta.toggles||{}).forEach(id=>{
+      const b=TG[id];
+      if(b&&(b.getAttribute('aria-pressed')==='true')!==!!meta.toggles[id])b.click();
+    });
+  }finally{quiet=false}
+  chans.forEach(c=>lvCh(c));lvGates();lvMaster();
+  offset=0;setSel(null,null);showTime();setMeter(-90);
+}
+async function refreshList(sel){
+  let list=[];
+  try{list=await dbList()}catch(e){}
+  list.sort((a,b)=>b.savedAt-a.savedAt);
+  listSel.innerHTML='';
+  if(!list.length)listSel.append(h('option',{value:'',text:'Nenhum projeto salvo'}));
+  list.forEach(m=>listSel.append(h('option',{value:m.name,text:m.name+', salvo em '+fmtDate(m.savedAt)+', '+Math.round(m.secs)+' s'})));
+  if(sel)listSel.value=sel;
+}
+async function saveProject(){
+  const name=nameInp.value.trim().slice(0,60);
+  if(!name){say('Digite um nome para o projeto primeiro.');nameInp.focus();return}
+  if(!hasAudio()){say('Não há áudio para salvar. Carregue ou grave algo primeiro.');return}
+  if(R.state!=='idle'){say('Pare a gravação antes de salvar.');return}
+  let list=[];
+  try{list=await dbList()}catch(e){}
+  if(list.some(m=>m.name===name)&&name!==curProject&&!confirmTwice('save:'+name,'Já existe um projeto chamado '+name+'. Aperte Salvar de novo para substituir.'))return;
+  say('Salvando o projeto. Aguarde.');
+  try{
+    const {meta,chs}=captureProject(name);
+    try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+    const db=await idb();
+    await dbRun(db,['meta','data'],'readwrite',t=>{
+      t.objectStore('data').put({name,meta,chs});
+      return t.objectStore('meta').put({name,savedAt:meta.savedAt,secs:meta.secs});
+    });
+    curProject=name;dirty=false;
+    await refreshList(name);
+    say('Projeto '+name+' salvo neste aparelho, '+Math.round(meta.secs)+' segundos.');
+  }catch(e){
+    say('Não foi possível salvar. O aparelho pode estar sem espaço, ou o navegador bloqueou o armazenamento. Use Exportar projeto em arquivo.');
+  }
+}
+async function openProject(){
+  const name=listSel.value;
+  if(!name){say('Nenhum projeto selecionado. Salve um projeto primeiro.');return}
+  if(R.state!=='idle'){say('Pare a gravação antes de abrir um projeto.');return}
+  if(!confirmDirty('open'))return;
+  say('Abrindo o projeto. Aguarde.');
+  try{
+    const db=await idb();
+    const rec=await dbRun(db,['data'],'readonly',t=>t.objectStore('data').get(name));
+    if(!rec){say('Projeto não encontrado.');return}
+    await applyProject(rec.meta,rec.chs);
+    curProject=name;nameInp.value=name;dirty=false;
+    say('Projeto '+name+' aberto, '+Math.round(rec.meta.secs)+' segundos.');
+  }catch(e){say('Não foi possível abrir o projeto.')}
+}
+async function deleteProject(){
+  const name=listSel.value;
+  if(!name){say('Nenhum projeto selecionado.');return}
+  if(!confirmTwice('del:'+name,'Apagar o projeto '+name+' do aparelho? Aperte Apagar de novo para confirmar. Não dá para desfazer.'))return;
+  try{
+    const db=await idb();
+    await dbRun(db,['meta','data'],'readwrite',t=>{t.objectStore('data').delete(name);return t.objectStore('meta').delete(name)});
+    if(curProject===name)curProject='';
+    await refreshList();
+    say('Projeto '+name+' apagado.');
+  }catch(e){say('Não foi possível apagar o projeto.')}
+}
+function exportFile(){
+  if(!hasAudio()){say('Não há áudio para exportar. Carregue ou grave algo primeiro.');return}
+  if(R.state!=='idle'){say('Pare a gravação antes de exportar.');return}
+  const name=(nameInp.value.trim()||curProject||'projeto').slice(0,60);
+  const {meta,chs}=captureProject(name);
+  const file=name.replace(/[\\/:*?"<>|]/g,'_')+'.mesa';
+  downloadBlob(new Blob([packProject(meta,chs)],{type:'application/octet-stream'}),file);
+  say('Projeto exportado como '+file+'. Veja a pasta de downloads.');
+}
+async function importFile(file){
+  try{
+    const p=unpackProject(await file.arrayBuffer());
+    if(!p||!Array.isArray(p.chs)||p.chs.length!==N){say('Este arquivo não é um projeto da Mesa de Áudio.');return}
+    say('Importando o projeto. Aguarde.');
+    await applyProject(p.meta||{},p.chs);
+    curProject='';nameInp.value=(p.meta&&p.meta.name)||'';dirty=false;
+    say('Projeto importado'+(nameInp.value?': '+nameInp.value:'')+'. Use Salvar projeto no aparelho para guardar uma cópia aqui.');
+  }catch(e){say('Não foi possível abrir o projeto. O arquivo pode estar danificado.')}
+}
+(function(){
+  const sec=$('projSec');
+  sec.append(h('h2',{id:'h-proj',tabindex:'-1',text:'Projetos'}));
+  sec.append(h('p',{class:'hint',text:'Salve a mixagem no aparelho para continuar depois. O projeto guarda os áudios dos seis canais e todos os ajustes. Para levar a outro aparelho, exporte em arquivo e importe lá.'}));
+  const nameW=textField('pjName','Nome do projeto',()=>{});
+  nameInp=nameW.inp;
+  listSel=h('select',{id:'pjList'});
+  const listW=h('div',{class:'field'},h('label',{for:'pjList',text:'Projetos salvos neste aparelho'}),listSel);
+  const impIn=h('input',{type:'file',id:'pjImp',hidden:true,tabindex:'-1'});
+  impIn.addEventListener('change',()=>{const f=impIn.files[0];impIn.value='';if(f)importFile(f)});
+  sec.append(h('div',{class:'pgrid'},
+    h('div',{class:'pcol'},nameW,
+      btn('Salvar projeto no aparelho',saveProject,'btn primary'),
+      btn('Exportar projeto em arquivo',exportFile),
+      btn('Importar projeto de arquivo',()=>{if(!confirmDirty('imp'))return;impIn.click()}),impIn),
+    h('div',{class:'pcol'},listW,
+      h('div',{class:'row'},btn('Abrir projeto selecionado',openProject),btn('Apagar projeto selecionado',deleteProject,'btn quiet')))));
+  refreshList();
+})();
+const markDirty=e=>{if(!quiet&&!(e.target.closest&&e.target.closest('#projSec')))dirty=true};
+document.addEventListener('input',markDirty);
+document.addEventListener('change',markDirty);
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('button[aria-pressed]');
+  if(b&&!b.hasAttribute('data-view'))markDirty(e);
+});
+window.addEventListener('beforeunload',e=>{if(dirty&&hasAudio()){e.preventDefault();e.returnValue=''}});
 
 /* visualização */
 let view='lista',one=0;
