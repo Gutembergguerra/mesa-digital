@@ -161,7 +161,8 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
   .transport .time{margin-left:auto}
 }
 /* faixas */
-.tbar{display:none}
+.tbar,.fxmenu{display:none}
+.grid.view-faixas .card>.fxmenu.pane-show{flex-direction:row;flex-wrap:wrap;gap:6px}
 .grid.view-faixas{grid-template-columns:1fr;gap:8px}
 .grid.view-faixas .tbar{display:flex;flex-wrap:wrap;gap:6px}
 .tbar .btn{min-height:44px;padding:0 10px}
@@ -404,12 +405,13 @@ header .field label{font-size:.85rem}
     </ol>
 
     <h3>4b. Visualização Faixas: botões por canal, com setas</h3>
-    <p>Na lista “Visualização dos canais”, escolha “Faixas”. No computador, ela já vem escolhida na primeira vez. Cada canal vira uma linha de botões, nesta ordem: Armar, Volume, Mudo, Solo, Pan, Pré-amplificador, Equalizador, Delay, Chorus, Áudio e Mais.</p>
+    <p>Na lista “Visualização dos canais”, escolha “Faixas”. No computador, ela já vem escolhida na primeira vez. Cada canal vira uma linha de botões, nesta ordem: Armar, Volume, Mudo, Solo, Pan, Efeitos, Áudio e Mais.</p>
     <ul>
       <li>Com Tab você entra na linha do canal. Use a seta para a direita e a seta para a esquerda para passar de um botão ao outro. Home vai ao primeiro e End vai ao último.</li>
       <li>A seta para baixo e a seta para cima levam ao mesmo botão do canal de baixo ou de cima.</li>
       <li>Armar, Mudo e Solo ligam e desligam na hora com Enter ou Espaço.</li>
-      <li>Volume, Pan, Pré-amplificador, Equalizador, Delay, Chorus e Áudio abrem as opções daquele item logo abaixo da linha, e o foco vai para elas. Ative o mesmo botão de novo, ou aperte Esc, para voltar à linha. Só um item fica aberto por vez.</li>
+      <li>Volume, Pan e Áudio abrem as opções daquele item logo abaixo da linha, e o foco vai para elas. Ative o mesmo botão de novo, ou aperte Esc, para voltar à linha. Só um item fica aberto por vez.</li>
+      <li>Efeitos abre uma lista de escolha com Pré-amplificador, Equalizador, Delay, Chorus e Reverb. Escolha um e as opções dele aparecem logo abaixo; Esc volta para a lista. Reverb escolhe este canal como o canal da voz e leva à seção Reverb de voz.</li>
       <li>“Mais” abre a tela com presets, copiar efeitos e restaurar. “Áudio” tem carregar e remover áudio do canal.</li>
       <li>No celular, essa visualização também funciona: os botões quebram em mais de uma linha e o TalkBack passa por eles deslizando.</li>
     </ul>
@@ -1549,7 +1551,10 @@ function doSnap(){
 
 /* ---------- construção da interface ---------- */
 /* faixa: uma linha de botões por canal, navegável com setas */
-const BAR=[['vol','Volume'],['pan','Pan'],['pre','Pré-amplificador'],['eq','Equalizador'],['dly','Delay'],['cho','Chorus'],['file','Áudio']];
+const BAR=[['vol','Volume'],['pan','Pan'],['fx','Efeitos'],['file','Áudio']];
+const FXLIST=[['pre','Pré-amplificador'],['eq','Equalizador'],['dly','Delay'],['cho','Chorus']];
+const FXSET=FXLIST.map(x=>x[0]);
+const paneOpener=k=>FXSET.includes(k)?'fx':k;
 function buildBar(c,panes,moreBtn){
   const who=c.who;
   c.panes=panes;c.pane=null;c.openers={};
@@ -1560,12 +1565,23 @@ function buildBar(c,panes,moreBtn){
   });
   const mais=btn('Mais',()=>openMenu(c.i,mais),'btn tb-open',{'aria-label':who+', mais ajustes: presets, copiar efeitos, restaurar','aria-haspopup':'dialog'});
   c.openers.mais=mais;
-  c.tb.append(c.openers.vol,c.openers.pan,c.openers.pre,c.openers.eq,c.openers.dly,c.openers.cho,c.openers.file,mais);
+  c.tb.append(c.openers.vol,c.openers.pan,c.openers.fx,c.openers.file,mais);
+  const fm=h('div',{class:'fxmenu',role:'group','aria-label':who+', escolher efeito'});
+  c.fxBtns={};
+  FXLIST.forEach(([k,label])=>{
+    const b=btn(label,()=>selectFx(c,k),'btn fxsel',{'aria-pressed':'false','aria-label':who+', '+label.toLowerCase()});
+    c.fxBtns[k]=b;fm.append(b);
+  });
+  fm.append(btn('Reverb',()=>{
+    const v=SE['vrCh'];if(v){v.value=String(c.i);v.dispatchEvent(new Event('change'))}
+    goSection('vr');say(who+': escolhido como canal da voz. Ajuste o Reverb de voz aqui.');
+  },'btn fxsel',{'aria-label':who+', reverb de voz'}));
+  c.panes.fx=fm;c.fxMenu=fm;
   c.tb.addEventListener('keydown',e=>barKey(c,e));
-  c.sec.querySelector('h3').after(c.tb);
+  c.sec.querySelector('h3').after(c.tb);c.tb.after(fm);
   c.sec.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&view==='faixas'&&c.pane&&!menuOpen&&!e.target.closest('.tbar')){
-      e.preventDefault();e.stopPropagation();c.openers[c.pane].focus();
+      e.preventDefault();e.stopPropagation();c.openers[paneOpener(c.pane)].focus();
     }
   });
 }
@@ -1603,20 +1619,29 @@ function barLeave(c){
   c.muteBtn.removeAttribute('tabindex');c.soloBtn.removeAttribute('tabindex');c.armBtn.removeAttribute('tabindex');
 }
 function showPane(c,k,silent){
-  Object.keys(c.panes).forEach(x=>{
-    c.panes[x].classList.toggle('pane-show',x===k);
-    if(c.openers[x])c.openers[x].setAttribute('aria-expanded',String(x===k));
-  });
+  const shown=!k?[]:k==='fx'?['fx']:FXSET.includes(k)?['fx',k]:[k];
+  Object.keys(c.panes).forEach(x=>c.panes[x].classList.toggle('pane-show',shown.includes(x)));
+  Object.keys(c.openers).forEach(x=>c.openers[x].setAttribute('aria-expanded',String(!!k&&x===paneOpener(k))));
+  Object.keys(c.fxBtns).forEach(x=>c.fxBtns[x].setAttribute('aria-pressed',String(x===k)));
   c.pane=k;
   if(k&&c.panes[k].tagName==='DETAILS')c.panes[k].open=true;
 }
-function togglePane(c,k){
-  if(c.pane===k){showPane(c,null);say(c.who+', '+BAR.find(x=>x[0]===k)[1]+', fechado.');return}
-  showPane(c,k);
-  const label=BAR.find(x=>x[0]===k)[1];
+function focusPane(c,k){
   const f=c.panes[k].querySelector('input[type=range]')||c.panes[k].querySelector('button,select');
   if(f)f.focus();
+}
+function togglePane(c,k){
+  const label=BAR.find(x=>x[0]===k)[1];
+  if(paneOpener(c.pane)===k){showPane(c,null);say(c.who+', '+label+', fechado.');return}
+  showPane(c,k);
+  if(k==='fx'){c.fxBtns.pre.focus();say(c.who+', Efeitos. Escolha pré-amplificador, equalizador, delay, chorus ou reverb.');return}
+  focusPane(c,k);
   say(c.who+', '+label+', opções abertas. Esc volta para a faixa.');
+}
+function selectFx(c,k){
+  if(c.pane===k){showPane(c,'fx');c.fxBtns[k].focus();say(c.who+', efeito fechado.');return}
+  showPane(c,k);focusPane(c,k);
+  say(c.who+', '+FXLIST.find(x=>x[0]===k)[1]+', opções abertas. Esc volta para Efeitos.');
 }
 const FXDEF={pre:0,heat:0,low:0,mid:0,high:0,dTime:300,dFb:35,dMix:30,cRate:.8,cDepth:50,cMix:40};
 const FXID={pre:'pg',heat:'ph',low:'el',mid:'em',high:'eh',dTime:'dt',dFb:'df',dMix:'dm',cRate:'cr',cDepth:'cd',cMix:'cm'};
@@ -2319,7 +2344,7 @@ document.addEventListener('input',markDirty);
 document.addEventListener('change',markDirty);
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('button[aria-pressed]');
-  if(b&&!b.hasAttribute('data-view')&&!b.classList.contains('acc-btn')&&!b.classList.contains('arm'))markDirty(e);
+  if(b&&!b.hasAttribute('data-view')&&!b.classList.contains('acc-btn')&&!b.classList.contains('arm')&&!b.classList.contains('fxsel'))markDirty(e);
 });
 window.addEventListener('beforeunload',e=>{if(dirty&&hasAudio()){e.preventDefault();e.returnValue=''}});
 
