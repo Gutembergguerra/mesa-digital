@@ -131,6 +131,26 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 .grid.view-lado{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:16px;padding-bottom:12px}
 .grid.view-lado .card{flex:0 0 min(86vw,320px);scroll-snap-align:start}
 .grid.view-um{grid-template-columns:minmax(0,520px)}
+.more-btn{display:none}
+/* Mesa: faders na vertical, seis tiras lado a lado */
+.grid.view-mesa{display:flex;overflow-x:auto;gap:12px;padding-bottom:12px;align-items:stretch}
+.grid.view-mesa .card{flex:0 0 188px;padding:10px;gap:10px}
+.grid.view-mesa .card h3{font-size:1.05rem}
+.grid.view-mesa .file{font-size:.85rem}
+.grid.view-mesa .filerow .btn.quiet{display:none}
+.grid.view-mesa .ctl-vol .ctl-row{flex-direction:column-reverse;align-items:stretch;gap:8px}
+.grid.view-mesa .ctl-vol input[type=range]{writing-mode:vertical-lr;direction:rtl;width:44px;height:230px;flex:none;align-self:center}
+.grid.view-mesa .ctl-vol .step{width:100%}
+.grid.view-mesa .ctl-vol .ctl-head{justify-content:center}
+.grid.view-mesa .ctl-vol .lbl{display:none}
+/* Compacto: uma linha por canal, só volume, mudo e solo */
+.grid.view-compacto{grid-template-columns:1fr;gap:8px}
+.grid.view-compacto .card{flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 12px}
+.grid.view-compacto .card h3{min-width:112px}
+.grid.view-compacto .filerow,.grid.view-compacto .ctl-pan,.grid.view-compacto details.fx{display:none}
+.grid.view-compacto .ctl-vol{flex:1 1 260px}
+.grid.view-compacto .pair{grid-template-columns:auto auto}
+.grid.view-compacto .more-btn{display:inline-flex;align-items:center}
 .note{margin-top:28px;color:var(--muted);max-width:70ch;border-top:1px solid var(--line);padding-top:14px}
 </style>
 
@@ -191,6 +211,8 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
     <button type="button" class="btn" data-view="lista" aria-pressed="true">Lista</button>
     <button type="button" class="btn" data-view="lado" aria-pressed="false">Lado a lado</button>
     <button type="button" class="btn" data-view="um" aria-pressed="false">Um canal por vez</button>
+    <button type="button" class="btn" data-view="mesa" aria-pressed="false">Mesa com faders na vertical</button>
+    <button type="button" class="btn" data-view="compacto" aria-pressed="false">Compacto</button>
   </div>
   <div class="chnav" id="chnav" hidden>
     <button type="button" class="btn" id="chPrev" aria-label="Canal anterior">‹ Anterior</button>
@@ -1307,10 +1329,12 @@ function buildChannel(i){
       slider({id:'cd'+p,who:who+', chorus',label:'Profundidade',min:0,max:100,step:5,btn:5,value:50,spoken:sPct,short:vPct,onChange:v=>{c.s.cDepth=v;lvCh(c)}}).wrap,
       slider({id:'cm'+p,who:who+', chorus',label:'Mistura',min:0,max:100,step:5,btn:5,value:40,spoken:sPct,short:vPct,onChange:v=>{c.s.cMix=v;lvCh(c)}}).wrap));
 
+  vol.wrap.classList.add('ctl-vol');pan.wrap.classList.add('ctl-pan');
+  const more=btn('Mais controles',()=>{one=c.i;setView('um');chans[c.i].title.focus()},'btn more-btn',{'aria-label':who+', mais controles'});
   c.sec=h('section',{class:'card','aria-labelledby':'h'+p,'data-ch':i},
     c.title,
     h('div',{class:'filerow'},pick,c.fileInput,c.fileEl,rm),
-    vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo),
+    vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo),more,
     preBox,eqBox,dBox,cBox);
   c.sec.style.setProperty('--h',String([205,160,35,285,345,95][i]));
   chans.push(c);
@@ -1869,7 +1893,7 @@ window.addEventListener('beforeunload',e=>{if(dirty&&hasAudio()){e.preventDefaul
 
 /* visualização */
 let view='lista',one=0;
-const VIEWNAME={lista:'lista',lado:'lado a lado',um:'um canal por vez'};
+const VIEWNAME={lista:'lista',lado:'lado a lado',um:'um canal por vez',mesa:'mesa com faders na vertical',compacto:'compacto, só volume, mudo e solo'};
 const vbtns=Array.from(document.querySelectorAll('[data-view]'));
 const chnav=$('chnav'),chSel=$('chSel');
 for(let q=0;q<N;q++)chSel.append(h('option',{value:q,text:'Canal '+(q+1)}));
