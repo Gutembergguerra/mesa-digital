@@ -145,6 +145,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
       <a href="#h-rec">Gravação</a>
       <a href="#h-met">Metrônomo</a>
       <a href="#h-ed">Edição</a>
+      <a href="#h-tu">Afinação</a>
       <a href="#h-canais">Canais</a>
       <a href="#h-master">Master</a>
     </nav>
@@ -181,6 +182,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
   <section class="panel" id="recSec" aria-labelledby="h-rec"></section>
   <section class="panel" id="metSec" aria-labelledby="h-met"></section>
   <section class="panel" id="edSec" aria-labelledby="h-ed"></section>
+  <section class="panel" id="tuSec" aria-labelledby="h-tu"></section>
 
   <h2 id="h-canais" tabindex="-1">Canais</h2>
   <div class="viewbar" role="group" aria-label="Visualização dos canais">
@@ -198,7 +200,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 
   <section class="master" id="masterSec" aria-labelledby="h-master"></section>
 
-  <p class="note">Em construção: afinador de voz e exportação em MP3.</p>
+  <p class="note">Dica: salve o projeto antes de fechar e use fones ao gravar sobre outras pistas.</p>
 </div>
 
 <div id="avisos" class="sr-only" role="status" aria-live="polite"></div>
@@ -341,6 +343,179 @@ function unpackProject(ab){
   });
   return {meta:h.meta,chs:chs};
 }
+function medianOf(a){var b=a.slice().sort(function(x,y){return x-y});return b[b.length>>1]}
+async function analyzePitch(x,sr,yieldFn){
+  var d=Math.max(1,Math.round(sr/11025)),fsd=sr/d;
+  var nd=Math.floor(x.length/d),xd=new Float32Array(nd);
+  for(var i=0;i<nd;i++){var s=0;for(var k=0;k<d;k++)s+=x[i*d+k];xd[i]=s/d}
+  var W=Math.round(fsd*.036),tmin=Math.max(2,Math.floor(fsd/1000)),tmax=Math.ceil(fsd/70);
+  var hop=Math.max(1,Math.round(.01*sr/d));
+  var nf=Math.max(0,Math.floor((nd-W-tmax-1)/hop));
+  var f0=new Float32Array(nf),cm=new Float32Array(tmax+2);
+  for(var f=0;f<nf;f++){
+    var s0=f*hop,e=0,j,t;
+    for(j=0;j<W;j++){var v=xd[s0+j];e+=v*v}
+    if(Math.sqrt(e/W)>=.004){
+      var run=0;cm[0]=1;
+      for(t=1;t<=tmax;t++){
+        var sum=0;
+        for(j=0;j<W;j++){var df=xd[s0+j]-xd[s0+j+t];sum+=df*df}
+        run+=sum;cm[t]=run>0?sum*t/run:1;
+      }
+      var tau=-1;
+      for(t=tmin;t<=tmax-1;t++){
+        if(cm[t]<.15){while(t+1<=tmax-1&&cm[t+1]<cm[t])t++;tau=t;break}
+      }
+      if(tau<0){
+        var bm=1,bt=-1;
+        for(t=tmin;t<=tmax-1;t++){if(cm[t]<bm){bm=cm[t];bt=t}}
+        if(bt>0&&bm<.25)tau=bt;
+      }
+      if(tau>0){
+        var a=cm[tau-1],b=cm[tau],c=cm[tau+1],den=a-2*b+c,sh=den!==0?.5*(a-c)/den:0;
+        f0[f]=fsd/(tau+sh);
+      }
+    }
+    if(yieldFn&&(f&127)===127)await yieldFn(f/nf);
+  }
+  var g=new Float32Array(nf);
+  for(var q=0;q<nf;q++){
+    if(!f0[q])continue;
+    var vals=[];
+    for(var r=Math.max(0,q-2);r<=Math.min(nf-1,q+2);r++)if(f0[r])vals.push(f0[r]);
+    var m=medianOf(vals);
+    g[q]=Math.abs(Math.log(f0[q]/m))>.2?m:f0[q];
+  }
+  var i2=0;
+  while(i2<nf){
+    if(!g[i2]){i2++;continue}
+    var j2=i2;while(j2<nf&&g[j2])j2++;
+    if(j2-i2<4)for(var z=i2;z<j2;z++)g[z]=0;
+    i2=j2;
+  }
+  return {sr:sr,hopS:hop*d,c0:Math.round(W/2)*d,f0:g};
+}
+function scaleMask(kind,tonic){
+  var base=kind==='maior'?[0,2,4,5,7,9,11]:kind==='menor'?[0,2,3,5,7,8,10]:[0,1,2,3,4,5,6,7,8,9,10,11];
+  var m=[];for(var i=0;i<12;i++)m.push(false);
+  base.forEach(function(d){m[(d+tonic)%12]=true});
+  return m;
+}
+function nearestAllowed(midi,mask){
+  var r=Math.round(midi),best=r,bd=1e9;
+  for(var k=-6;k<=6;k++){
+    var n=r+k;
+    if(mask[((n%12)+12)%12]){var dd=Math.abs(n-midi);if(dd<bd){bd=dd;best=n}}
+  }
+  return best;
+}
+function planCorrection(an,opts){
+  var f0=an.f0,nf=f0.length,semi=new Float32Array(nf);
+  var alpha=1-Math.exp(-(an.hopS/an.sr)/Math.max(.005,opts.smooth));
+  var sm=0,prev=false,sumAbs=0,cnt=0;
+  for(var f=0;f<nf;f++){
+    if(!f0[f]){prev=false;continue}
+    var midi=69+12*Math.log(f0[f]/440)/Math.LN2;
+    var err=nearestAllowed(midi,opts.mask)-midi,ae=Math.max(0,Math.abs(err)-.05);
+    var tgt=(err<0?-ae:ae)*opts.strength;
+    if(!prev)sm=tgt;else sm+=alpha*(tgt-sm);
+    prev=true;semi[f]=sm;sumAbs+=Math.abs(sm);cnt++;
+  }
+  return {semi:semi,voiced:cnt,total:nf,meanCents:cnt?sumAbs/cnt*100:0};
+}
+function semiAt(plan,an,pos){
+  var n=plan.semi.length,fi=(pos-an.c0)/an.hopS;
+  var i0=Math.max(0,Math.min(n-1,Math.floor(fi))),i1=Math.min(n-1,i0+1),t=Math.max(0,Math.min(1,fi-i0));
+  return plan.semi[i0]+(plan.semi[i1]-plan.semi[i0])*t;
+}
+function argmaxSigned(x,lo,hi,sg){
+  lo=Math.max(0,lo);hi=Math.min(x.length-1,hi);
+  var b=lo,bv=-Infinity;
+  for(var i=lo;i<=hi;i++){var v=sg*x[i];if(v>bv){bv=v;b=i}}
+  return b;
+}
+function buildSegments(mono,an,plan){
+  var f0=an.f0,nf=f0.length,hopS=an.hopS,c0=an.c0,sr=an.sr,segs=[];
+  function periodAt(pos){
+    var fi=Math.max(0,Math.min(nf-1,(pos-c0)/hopS)),i0=Math.floor(fi),i1=Math.min(nf-1,i0+1);
+    var a=f0[i0],b=f0[i1],f=(a&&b)?a+(b-a)*(fi-i0):(a||b);
+    return f?sr/f:0;
+  }
+  var i=0;
+  while(i<nf){
+    if(!f0[i]){i++;continue}
+    var j=i;while(j<nf&&f0[j])j++;
+    var s=Math.max(0,Math.round(c0+i*hopS-hopS/2)),e=Math.min(mono.length-1,Math.round(c0+(j-1)*hopS+hopS/2));
+    var mx=0;for(var q=i;q<j;q++)mx=Math.max(mx,Math.abs(plan.semi[q]));
+    if(mx>=.03&&e-s>sr*.03){
+      var pk=0,vl=0;
+      for(var k=s;k<=e;k++){if(mono[k]>pk)pk=mono[k];if(-mono[k]>vl)vl=-mono[k]}
+      var sg=vl>pk*1.2?-1:1,P=periodAt(s),marks=[];
+      if(P){
+        var m=argmaxSigned(mono,s,Math.min(e,Math.round(s+P)),sg);
+        marks.push(m);
+        for(;;){
+          var Pm=periodAt(m);if(!Pm)break;
+          var cand=m+Pm;if(cand>e)break;
+          var nm=argmaxSigned(mono,Math.round(cand-.3*Pm),Math.round(cand+.3*Pm),sg);
+          if(nm<=m)nm=Math.round(cand);
+          marks.push(nm);m=nm;
+        }
+      }
+      if(marks.length>3)segs.push({s:s,e:e,marks:marks});
+    }
+    i=j;
+  }
+  return {segs:segs,periodAt:periodAt};
+}
+function psolaChannel(x,bs,an,plan){
+  var N=x.length,y=new Float32Array(N),wv=new Float32Array(N),ramp=Math.max(1,Math.round(.005*an.sr));
+  bs.segs.forEach(function(sg){
+    var marks=sg.marks,mi=0,t=marks[0];
+    while(t<sg.e){
+      while(mi+1<marks.length&&Math.abs(marks[mi+1]-t)<=Math.abs(marks[mi]-t))mi++;
+      var m=marks[mi],P=bs.periodAt(m);if(!P)break;
+      var L=Math.max(2,Math.round(P)),beta=Math.pow(2,semiAt(plan,an,t)/12),tc=Math.round(t);
+      for(var k=-L;k<=L;k++){
+        var si=m+k,di=tc+k;
+        if(si<0||si>=N||di<0||di>=N)continue;
+        y[di]+=x[si]*(.5+.5*Math.cos(Math.PI*k/L))/beta;
+      }
+      t+=P/beta;
+    }
+    for(var n=sg.s;n<=sg.e&&n<N;n++){
+      var w=1,a=n-sg.s,b=sg.e-n;
+      if(a<ramp)w=a/ramp;
+      if(b<ramp)w=Math.min(w,b/ramp);
+      if(w>wv[n])wv[n]=w;
+    }
+  });
+  var out=new Float32Array(N);
+  for(var n2=0;n2<N;n2++)out[n2]=x[n2]*(1-wv[n2])+y[n2]*wv[n2];
+  return out;
+}
+async function tuneChannels(D,sr,opts,yieldFn){
+  var N=D[0].length,mono=new Float32Array(N);
+  D.forEach(function(d){for(var i=0;i<N;i++)mono[i]+=d[i]/D.length});
+  var an=await analyzePitch(mono,sr,yieldFn);
+  var plan=planCorrection(an,opts);
+  if(!plan.voiced)return {out:null,plan:plan};
+  var bs=buildSegments(mono,an,plan);
+  if(!bs.segs.length)return {out:null,plan:plan,same:true};
+  return {out:D.map(function(d){return psolaChannel(d,bs,an,plan)}),plan:plan,segs:bs.segs.length};
+}
+function pBlend(D,tuned,i0,sr){
+  var n=Math.max(1,Math.min(Math.floor(.005*sr),tuned[0].length>>1));
+  return D.map(function(d,k){
+    var o=d.slice(),t=tuned[Math.min(k,tuned.length-1)];
+    for(var j=0;j<t.length&&i0+j<o.length;j++){
+      var w=1;
+      if(j<n)w=j/n;else if(t.length-1-j<n)w=(t.length-1-j)/n;
+      o[i0+j]=d[i0+j]*(1-w)+t[j]*w;
+    }
+    return o;
+  });
+}
 /*PURE-END*/
 
 const N=6;
@@ -350,7 +525,7 @@ let quiet=false,dirty=false;
 function say(t){if(quiet)return;region.textContent='';setTimeout(()=>{region.textContent=t},40)}
 const $=id=>document.getElementById(id);
 const SL={},SE={},TG={};
-const KEEP_SEL=['mcomp','mrevt','mbar','recCh','recCount','edCh','edStep'];
+const KEEP_SEL=['mcomp','mrevt','mbar','recCh','recCount','edCh','edStep','tuCh','tuScale','tuKey','tuSpeed','tuRange','mp3q'];
 
 /* ---------- helpers ---------- */
 function h(tag,props,...kids){
@@ -664,7 +839,7 @@ function bufFromData(D,sr){
 }
 const dataOf=b=>Array.from({length:b.numberOfChannels},(_,i)=>b.getChannelData(i));
 function commit(c,newBuf,desc){
-  c.undo.push({buf:c.buffer,desc});
+  c.undo.push({buf:c.buffer,desc,ed:c.edited});
   if(c.undo.length>30)c.undo.shift();
   c.redo=[];
   c.buffer=newBuf;c.edited=true;dirty=true;
@@ -675,15 +850,15 @@ function commit(c,newBuf,desc){
 function undo(c){
   const e=c.undo.pop();
   if(!e){say('Nada para desfazer no '+c.who);return}
-  c.redo.push({buf:c.buffer,desc:e.desc});
-  c.buffer=e.buf;refreshLabel(c);refreshPlayback();showTime();
+  c.redo.push({buf:c.buffer,desc:e.desc,ed:c.edited});
+  c.buffer=e.buf;c.edited=e.ed;refreshLabel(c);refreshPlayback();showTime();
   say('Desfeito no '+c.who+': '+e.desc);
 }
 function redo(c){
   const e=c.redo.pop();
   if(!e){say('Nada para refazer no '+c.who);return}
-  c.undo.push({buf:c.buffer,desc:e.desc});
-  c.buffer=e.buf;refreshLabel(c);refreshPlayback();showTime();
+  c.undo.push({buf:c.buffer,desc:e.desc,ed:c.edited});
+  c.buffer=e.buf;c.edited=e.ed;refreshLabel(c);refreshPlayback();showTime();
   say('Refeito no '+c.who+': '+e.desc);
 }
 function loadFile(c,file,quiet){
@@ -778,7 +953,7 @@ function downloadBlob(blob,name){
   a.href=url;a.download=name;document.body.append(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
-async function exportWav(){
+async function exportWav(fmt){
   if(!dur()){say('Nada para exportar. Carregue ou grave algum áudio.');return}
   if(R.state!=='idle'){say('Pare a gravação antes de exportar.');return}
   if(playing)pause(false);
@@ -795,6 +970,14 @@ async function exportWav(){
       const s=oc.createBufferSource();s.buffer=c.buffer;s.connect(gr.ch[c.i].pre);s.start(0);
     });
     const out=await oc.startRendering();
+    if(fmt==='mp3'){
+      try{await loadLame()}catch(e){say('Não consegui carregar o codificador de MP3. Para exportar em MP3 é preciso estar conectado à internet, ao menos na primeira vez. Use o WAV por enquanto.');return}
+      const kbps=+($('mp3q')?$('mp3q').value:192)||192;
+      say('Codificando o MP3. Aguarde.');
+      downloadBlob(await encodeMp3(out,kbps),'mixagem.mp3');
+      say('Exportação concluída: arquivo mixagem.mp3, '+sec1(out.duration)+' segundos, '+kbps+' kbps. Veja a pasta de downloads.');
+      return;
+    }
     const ab=encodeWav([out.getChannelData(0),out.getChannelData(1)],sr);
     downloadBlob(new Blob([ab],{type:'audio/wav'}),'mixagem.wav');
     say('Exportação concluída: arquivo mixagem.wav, '+sec1(out.duration)+' segundos. Veja a pasta de downloads.');
@@ -1256,16 +1439,100 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     if(!playing||pk<=0){say('Master: sem sinal agora. Toque a mixagem e tente de novo.');return}
     say('Pico recente do Master: '+sDb(Math.round(20*Math.log10(pk)*10)/10));
   },'btn quiet');
-  const exp=btn('Exportar mixagem em WAV',exportWav,'btn primary');
+  const exp=btn('Exportar mixagem em WAV',()=>exportWav('wav'),'btn primary');
+  const exp3=btn('Exportar mixagem em MP3',()=>exportWav('mp3'));
+  const q3=selectField('mp3q','Qualidade do MP3',[['128','128 kbps, arquivo menor'],['192','192 kbps, boa qualidade'],['320','320 kbps, qualidade máxima']],'192',(v,t)=>say('Qualidade: '+t));
   meterEl=h('i');meterBox=h('div',{class:'meter','aria-hidden':'true'},meterEl);
   sec.append(h('div',{class:'mgrid'},
     h('div',{class:'mcol'},h('h3',{text:'Nível'}),vol.wrap,meterBox,rd,cmp),
     h('div',{class:'mcol'},h('h3',{text:'Equalizador'}),eq('Graves','low','mel'),eq('Médios','mid','mem'),eq('Agudos','high','meh')),
     h('div',{class:'mcol'},h('h3',{text:'Compressor e limitador'}),compSel,ceil.wrap),
     h('div',{class:'mcol'},h('h3',{text:'Reverb'}),revBtn,revType,revAmt.wrap),
-    h('div',{class:'mcol'},h('h3',{text:'Exportar'}),h('p',{class:'hint',text:'Gera um arquivo WAV com todos os canais e o Master, e baixa no aparelho.'}),exp)
+    h('div',{class:'mcol'},h('h3',{text:'Exportar'}),h('p',{class:'hint',text:'Gera um arquivo com todos os canais e o Master, e baixa no aparelho. O WAV tem a melhor qualidade. O MP3 é menor, e precisa de internet na primeira vez.'}),exp,q3,exp3)
   ));
 })();
+
+/* ---------- afinação de voz ---------- */
+let tuning=false;
+async function doTune(){
+  const c=chans[+$('tuCh').value];
+  if(!c.buffer){say(c.who+' está vazio.');return}
+  if(R.state!=='idle'){say('Pare a gravação antes de afinar.');return}
+  if(tuning){say('Já estou afinando. Aguarde.');return}
+  if(playing)pause(false);
+  const b=c.buffer,sr=b.sampleRate;
+  let i0=0,i1=b.length;
+  if($('tuRange').value==='sel'){
+    if(!needSel())return;
+    i0=idx(sel.a,b);i1=idx(sel.b,b);
+    if(i1-i0<sr*.1){say('A seleção é curta demais para afinar.');return}
+  }
+  const opts={
+    mask:scaleMask($('tuScale').value,+$('tuKey').value),
+    strength:+$('tuInt').value/100,
+    smooth:{rapida:.02,media:.08,suave:.2}[$('tuSpeed').value]||.08
+  };
+  tuning=true;
+  say('Analisando a voz do '+c.who+'. Isso pode levar alguns segundos.');
+  let said=false;
+  try{
+    const D=dataOf(b).map(d=>d.slice(i0,i1));
+    const r=await tuneChannels(D,sr,opts,async p=>{
+      await new Promise(res=>setTimeout(res,0));
+      if(p>=.5&&!said){said=true;say('Metade da análise concluída.')}
+    });
+    if(!r.out){
+      say(r.plan.voiced
+        ?'A voz já está dentro da afinação escolhida. Nada foi alterado.'
+        :'Não encontrei voz cantada neste trecho. A afinação funciona melhor com uma voz sozinha, sem acompanhamento e sem muito eco.');
+      return;
+    }
+    const nd=pBlend(dataOf(b),r.out,i0,sr);
+    commit(c,bufFromData(nd,sr),'afinação de voz'+(i0>0||i1<b.length?' na seleção':''));
+    const pct=Math.round(r.plan.voiced/Math.max(1,r.plan.total)*100);
+    say('Afinação aplicada no '+c.who+'. Encontrei voz em '+pct+' por cento do trecho. Correção média de '+Math.round(r.plan.meanCents)+' centésimos de tom. Ouça o resultado. Para voltar ao original, use Desfazer na seção Edição.');
+  }catch(e){
+    say('Não foi possível afinar a voz.');
+  }finally{tuning=false}
+}
+(function(){
+  const sec=$('tuSec'),who='Afinação';
+  sec.append(h('h2',{id:'h-tu',tabindex:'-1',text:'Afinação de voz'}));
+  sec.append(h('p',{class:'hint',text:'Corrige as notas da voz de uma pista para a nota certa mais próxima. Funciona melhor com uma voz sozinha, sem eco. Ouça o resultado e use Desfazer na seção Edição se não gostar.'}));
+  const keys=[['0','Dó'],['1','Dó sustenido'],['2','Ré'],['3','Mi bemol'],['4','Mi'],['5','Fá'],['6','Fá sustenido'],['7','Sol'],['8','Lá bemol'],['9','Lá'],['10','Si bemol'],['11','Si']];
+  const ch=selectField('tuCh','Canal da voz',chOpts(),'0',(v,t)=>say('Afinando o '+t));
+  const scale=selectField('tuScale','Escala',[['cromatica','Cromática, todas as notas'],['maior','Escala maior'],['menor','Escala menor']],'cromatica',(v,t)=>say('Escala: '+t));
+  const key=selectField('tuKey','Tom, para escala maior ou menor',keys,'0',(v,t)=>say('Tom: '+t));
+  const speed=selectField('tuSpeed','Velocidade da correção',[['rapida','Rápida, mais afinada'],['media','Média'],['suave','Suave, mais natural']],'media',(v,t)=>say('Velocidade: '+t));
+  const range=selectField('tuRange','Trecho',[['all','Pista inteira'],['sel','Só a seleção marcada na seção Edição']],'all',(v,t)=>say('Trecho: '+t));
+  const inten=slider({id:'tuInt',who,label:'Intensidade',min:0,max:100,step:5,btn:5,value:80,spoken:sPct,short:vPct,onChange:()=>{}});
+  sec.append(h('div',{class:'pgrid'},
+    h('div',{class:'pcol'},ch,range,scale,key),
+    h('div',{class:'pcol'},inten.wrap,speed,btn('Afinar a voz',doTune,'btn primary'))));
+})();
+
+/* ---------- exportar MP3 ---------- */
+const LAME_URL='https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';
+function loadLame(){
+  if(window.lamejs)return Promise.resolve();
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src=LAME_URL;s.onload=()=>window.lamejs?res():rej(new Error('lame'));s.onerror=()=>rej(new Error('lame'));
+    document.head.append(s);
+  });
+}
+async function encodeMp3(buf,kbps){
+  const sr=buf.sampleRate,enc=new window.lamejs.Mp3Encoder(2,sr,kbps);
+  const L=toI16(buf.getChannelData(0)),Rr=toI16(buf.getChannelData(1)),parts=[],step=1152*10;
+  for(let i=0,n=0;i<L.length;i+=step,n++){
+    const o=enc.encodeBuffer(L.subarray(i,i+step),Rr.subarray(i,i+step));
+    if(o.length)parts.push(new Uint8Array(o));
+    if(n%40===39)await new Promise(r=>setTimeout(r,0));
+  }
+  const f=enc.flush();
+  if(f.length)parts.push(new Uint8Array(f));
+  return new Blob(parts,{type:'audio/mpeg'});
+}
 
 /* ---------- projetos: salvar, abrir, exportar, importar ---------- */
 let curProject='',confirmKey='',confirmTimer=0,nameInp=null,listSel=null,dbp=null;
