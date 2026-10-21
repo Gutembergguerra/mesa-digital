@@ -146,6 +146,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
       <a href="#h-met">Metrônomo</a>
       <a href="#h-ed">Edição</a>
       <a href="#h-tu">Afinação</a>
+      <a href="#h-vr">Reverb de voz</a>
       <a href="#h-canais">Canais</a>
       <a href="#h-master">Master</a>
     </nav>
@@ -183,6 +184,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
   <section class="panel" id="metSec" aria-labelledby="h-met"></section>
   <section class="panel" id="edSec" aria-labelledby="h-ed"></section>
   <section class="panel" id="tuSec" aria-labelledby="h-tu"></section>
+  <section class="panel" id="vrSec" aria-labelledby="h-vr"></section>
 
   <h2 id="h-canais" tabindex="-1">Canais</h2>
   <div class="viewbar" role="group" aria-label="Visualização dos canais">
@@ -516,6 +518,22 @@ function pBlend(D,tuned,i0,sr){
     return o;
   });
 }
+var DUCK_CODE="class DuckProc extends AudioWorkletProcessor{\n  static get parameterDescriptors(){return [\n    {name:'thr',defaultValue:-18,minValue:-80,maxValue:0,automationRate:'k-rate'},\n    {name:'ratio',defaultValue:3,minValue:1,maxValue:20,automationRate:'k-rate'},\n    {name:'att',defaultValue:.005,minValue:.0005,maxValue:1,automationRate:'k-rate'},\n    {name:'rel',defaultValue:.18,minValue:.005,maxValue:3,automationRate:'k-rate'}\n  ]}\n  constructor(){super();this.env=0}\n  process(inputs,outputs,p){\n    var wet=inputs[0]||[],key=inputs[1]||[],out=outputs[0];\n    var thr=p.thr[0],ratio=p.ratio[0],att=p.att[0],rel=p.rel[0];\n    var ka=Math.exp(-1/(att*sampleRate)),kr=Math.exp(-1/(rel*sampleRate));\n    var n=out[0].length,slope=1-1/ratio;\n    for(var i=0;i<n;i++){\n      var k=0;\n      for(var c=0;c<key.length;c++){var v=Math.abs(key[c][i]);if(v>k)k=v}\n      var co=k>this.env?ka:kr;\n      this.env=k+co*(this.env-k);\n      var db=20*Math.log10(this.env+1e-9),gr=db>thr?(db-thr)*slope:0;\n      if(gr>30)gr=30;\n      var g=Math.pow(10,-gr/20);\n      for(var ch=0;ch<out.length;ch++){var src=wet[ch]||wet[0];out[ch][i]=src?src[i]*g:0}\n    }\n    return true;\n  }\n}\nregisterProcessor('duck-proc',DuckProc);\n";
+function hallIRData(sr,decay,size){
+  var len=Math.max(1,Math.floor(Math.min(8,decay*1.15)*sr)),out=[],build=.004+.09*size/100;
+  for(var ch=0;ch<2;ch++){
+    var d=new Float32Array(len),y=0,seed=ch?7919:1237;
+    for(var i=0;i<len;i++){
+      var t=i/sr;
+      seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+      var r=(seed/4294967296)*2-1,a=.55*Math.exp(-t/(decay*.55))+.06;
+      y+=a*(r-y);
+      d[i]=y*Math.exp(-6.9078*t/decay)*Math.min(1,t/build);
+    }
+    out.push(d);
+  }
+  return out;
+}
 /*PURE-END*/
 
 const N=6;
@@ -525,7 +543,7 @@ let quiet=false,dirty=false;
 function say(t){if(quiet)return;region.textContent='';setTimeout(()=>{region.textContent=t},40)}
 const $=id=>document.getElementById(id);
 const SL={},SE={},TG={};
-const KEEP_SEL=['mcomp','mrevt','mbar','recCh','recCount','edCh','edStep','tuCh','tuScale','tuKey','tuSpeed','tuRange','mp3q'];
+const KEEP_SEL=['mcomp','mrevt','mbar','recCh','recCount','edCh','edStep','tuCh','tuScale','tuKey','tuSpeed','tuRange','mp3q','vrCh','vrPreset'];
 
 /* ---------- helpers ---------- */
 function h(tag,props,...kids){
@@ -672,6 +690,7 @@ function buildGraph(C,all){
     n.vol.connect(n.pan);n.pan.connect(n.gate);n.gate.connect(m.bus);
     gr.ch.push(n);
   }
+  buildVR(C,gr);
   return gr;
 }
 function applyCh(gr,C,c,imm){
@@ -717,6 +736,8 @@ function ensureCtx(){
   chans.forEach(c=>applyCh(live,ctx,c,false));
   applyGates(live,ctx,false);
   applyMaster(live,ctx,false);
+  applyVR(live,ctx,true);
+  installDucker(live,ctx);
 }
 
 /* ---------- transporte ---------- */
@@ -960,11 +981,11 @@ async function exportWav(fmt){
   say('Exportando a mixagem. Aguarde.');
   try{
     const sr=ctx.sampleRate;
-    const tail=(M.revOn?4.5:0)+(chans.some(c=>c.s.dOn)?2.5:0)+.3;
+    const tail=(M.revOn?4.5:0)+(chans.some(c=>c.s.dOn)?2.5:0)+(VR.on?VR.decay*1.15+VR.pre/1000+.5:0)+.3;
     const oc=new OfflineAudioContext(2,Math.ceil((dur()+tail)*sr),sr);
     const gr=buildGraph(oc,false);
     chans.forEach(c=>applyCh(gr,oc,c,true));
-    applyGates(gr,oc,true);applyMaster(gr,oc,true);
+    applyGates(gr,oc,true);applyMaster(gr,oc,true);applyVR(gr,oc,true);await installDucker(gr,oc);
     chans.forEach(c=>{
       if(!c.buffer)return;
       const s=oc.createBufferSource();s.buffer=c.buffer;s.connect(gr.ch[c.i].pre);s.start(0);
@@ -1450,6 +1471,142 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     h('div',{class:'mcol'},h('h3',{text:'Reverb'}),revBtn,revType,revAmt.wrap),
     h('div',{class:'mcol'},h('h3',{text:'Exportar'}),h('p',{class:'hint',text:'Gera um arquivo com todos os canais e o Master, e baixa no aparelho. O WAV tem a melhor qualidade. O MP3 é menor, e precisa de internet na primeira vez.'}),exp,q3,exp3)
   ));
+})();
+
+/* ---------- reverb de voz: cadeia de 4 módulos ---------- */
+const VRDEF={on:false,ch:0,lvl:40,slapT:40,slapFb:10,slapMix:15,sat:true,
+  hpf:470,hpq:.7,lpf:6000,lpq:.7,compOn:true,thr:-18,ratio:3,att:5,rel:180,
+  decay:2.8,pre:20,size:85,mix:100};
+const VR=Object.assign({},VRDEF);
+function setHallIR(v,C){
+  const d=hallIRData(C.sampleRate,VR.decay,VR.size),b=C.createBuffer(2,d[0].length,C.sampleRate);
+  b.copyToChannel(d[0],0);b.copyToChannel(d[1],1);
+  v.conv.buffer=b;v.irKey=VR.decay+'|'+VR.size;
+}
+function buildVR(C,gr){
+  const m=gr.m,v=gr.vr={};
+  v.in=C.createGain();v.keyMix=C.createGain();
+  v.slapD=C.createDelay(1);v.slapFb=C.createGain();v.slapShp=C.createWaveShaper();v.slapShp.oversample='2x';
+  v.slapW=C.createGain();v.slapDry=C.createGain();v.mix1=C.createGain();
+  v.hpf=C.createBiquadFilter();v.hpf.type='highpass';
+  v.lpf=C.createBiquadFilter();v.lpf.type='lowpass';
+  v.eqOut=C.createGain();v.pre=C.createDelay(.5);
+  v.conv=C.createConvolver();v.wetG=C.createGain();v.dryG=C.createGain();v.out=C.createGain();
+  v.in.connect(v.slapDry);v.slapDry.connect(v.mix1);
+  v.in.connect(v.slapD);v.slapD.connect(v.slapFb);v.slapFb.connect(v.slapD);
+  v.slapD.connect(v.slapShp);v.slapShp.connect(v.slapW);v.slapW.connect(v.mix1);
+  v.mix1.connect(v.hpf);v.hpf.connect(v.lpf);v.lpf.connect(v.eqOut);v.eqOut.connect(v.pre);
+  v.pre.connect(v.conv);v.conv.connect(v.wetG);v.wetG.connect(v.out);
+  v.pre.connect(v.dryG);v.dryG.connect(v.out);
+  v.out.connect(m.bus);
+  v.sends=[];v.keys=[];v._sat='';v.irKey='';v.irT=0;v.duck=null;
+  gr.ch.forEach(n=>{
+    const sg=C.createGain(),kg=C.createGain();
+    n.gate.connect(sg);sg.connect(v.in);
+    n.gate.connect(kg);kg.connect(v.keyMix);
+    v.sends.push(sg);v.keys.push(kg);
+  });
+  setHallIR(v,C);
+}
+function applyVR(gr,C,imm){
+  const v=gr.vr,s=VR;
+  v.sends.forEach((g,i)=>setP(C,g.gain,s.on&&i===s.ch?1:0,imm));
+  v.keys.forEach((g,i)=>setP(C,g.gain,s.on&&i===s.ch?1:0,imm));
+  setP(C,v.slapD.delayTime,s.slapT/1000,imm);
+  setP(C,v.slapFb.gain,s.slapFb/100,imm);
+  setP(C,v.slapW.gain,s.slapMix/100,imm);setP(C,v.slapDry.gain,1-s.slapMix/100,imm);
+  const sk=s.sat?'1':'0';
+  if(v._sat!==sk){v.slapShp.curve=makeCurve(s.sat?.2:0);v._sat=sk}
+  setP(C,v.hpf.frequency,s.hpf,imm);setP(C,v.hpf.Q,s.hpq,imm);
+  setP(C,v.lpf.frequency,s.lpf,imm);setP(C,v.lpf.Q,s.lpq,imm);
+  setP(C,v.pre.delayTime,s.pre/1000,imm);
+  setP(C,v.wetG.gain,s.mix/100,imm);setP(C,v.dryG.gain,1-s.mix/100,imm);
+  setP(C,v.out.gain,s.lvl/100,imm);
+  if(v.duck){
+    const P=v.duck.parameters;
+    P.get('thr').value=s.thr;P.get('ratio').value=s.compOn?s.ratio:1;
+    P.get('att').value=s.att/1000;P.get('rel').value=s.rel/1000;
+  }
+  if(v.irKey!==s.decay+'|'+s.size){
+    clearTimeout(v.irT);
+    if(imm)setHallIR(v,C);else v.irT=setTimeout(()=>setHallIR(v,C),150);
+  }
+}
+async function installDucker(gr,C){
+  if(!C.audioWorklet||!window.AudioWorkletNode)return false;
+  try{
+    if(!C._duckOk){
+      const url=URL.createObjectURL(new Blob([DUCK_CODE],{type:'text/javascript'}));
+      await C.audioWorklet.addModule(url);C._duckOk=true;
+    }
+    const v=gr.vr,node=new AudioWorkletNode(C,'duck-proc',{numberOfInputs:2,numberOfOutputs:1,outputChannelCount:[2]});
+    v.eqOut.disconnect(v.pre);
+    v.eqOut.connect(node,0,0);v.keyMix.connect(node,0,1);node.connect(v.pre);
+    v.duck=node;applyVR(gr,C,true);
+    return true;
+  }catch(e){return false}
+}
+const lvVR=()=>{if(live)applyVR(live,ctx,false)};
+const sKhz=v=>v>=1000?(Math.round(v/10)/100).toString().replace('.',',')+' quilohertz':v+' hertz';
+const vKhz=v=>v>=1000?(Math.round(v/100)/10).toFixed(1).replace('.',',')+' kHz':v+' Hz';
+(function(){
+  const sec=$('vrSec'),W='Reverb de voz';
+  sec.append(h('h2',{id:'h-vr',tabindex:'-1',text:'Reverb de voz'}));
+  sec.append(h('p',{class:'hint',text:'Cadeia pronta para voz, com quatro módulos em sequência: slapback, filtros, compressor que abaixa o efeito quando a voz canta, e reverb de salão. Escolha o canal da voz, ligue e ajuste o nível do efeito. O ajuste de cada módulo é opcional.'}));
+  const S=(id,label,who,min,max,step,btnS,key,spoken,short)=>slider({id,who,label,min,max,step,btn:btnS,value:VRDEF[key],spoken,short,onChange:v=>{VR[key]=v;lvVR()}});
+  const onBtn=btn('Reverb de voz ligado',()=>{
+    VR.on=!VR.on;onBtn.setAttribute('aria-pressed',String(VR.on));lvVR();
+    say(VR.on?'Reverb de voz ligado no Canal '+(VR.ch+1):'Reverb de voz desligado');
+  },'btn primary',{id:'vron','aria-pressed':'false','aria-label':'Reverb de voz, ligado'});
+  const chSel=selectField('vrCh','Canal da voz, que também controla a compressão',chOpts(),'0',(v,t)=>{VR.ch=+v;lvVR();say('Reverb de voz no '+t)});
+  const lvl=S('vrLvl','Nível do efeito',W,0,100,5,5,'lvl',sPct,vPct);
+  const reset=btn('Restaurar os valores do preset',()=>{
+    quiet=true;
+    try{
+      Object.keys(VRDEF).forEach(k=>{
+        const id={lvl:'vrLvl',slapT:'vrSlapT',slapFb:'vrSlapFb',slapMix:'vrSlapMix',hpf:'vrHpf',hpq:'vrHpq',lpf:'vrLpf',lpq:'vrLpq',thr:'vrThr',ratio:'vrRatio',att:'vrAtt',rel:'vrRel',decay:'vrDecay',pre:'vrPre',size:'vrSize',mix:'vrMix'}[k];
+        if(id&&SL[id])SL[id](VRDEF[k],false);
+      });
+      ['vrsat','vrcomp'].forEach(id=>{const want=id==='vrsat'?VRDEF.sat:VRDEF.compOn;if((TG[id].getAttribute('aria-pressed')==='true')!==want)TG[id].click()});
+      $('vrPreset').value='grande';
+    }finally{quiet=false}
+    lvVR();say('Valores do preset restaurados.');
+  },'btn quiet');
+  sec.append(h('div',{class:'pgrid'},h('div',{class:'pcol'},onBtn,chSel),h('div',{class:'pcol'},lvl.wrap,reset)));
+
+  const satBtn=btn('Saturação vintage ligada',()=>{
+    VR.sat=!VR.sat;satBtn.setAttribute('aria-pressed',String(VR.sat));lvVR();say(VR.sat?'Saturação vintage ligada':'Saturação vintage desligada');
+  },'btn',{id:'vrsat','aria-pressed':'true','aria-label':'Slapback, saturação vintage ligada'});
+  const m1=h('div',{class:'pcol'},h('h3',{text:'1. Slapback analógico'}),
+    S('vrSlapT','Tempo',W+', slapback',10,250,5,5,'slapT',sMs,vMs).wrap,
+    S('vrSlapFb','Repetições',W+', slapback',0,60,5,5,'slapFb',sPct,vPct).wrap,
+    S('vrSlapMix','Mistura',W+', slapback',0,100,5,5,'slapMix',sPct,vPct).wrap,satBtn);
+  const m2=h('div',{class:'pcol'},h('h3',{text:'2. Filtros de graves e agudos'}),
+    S('vrHpf','Corta graves abaixo de',W+', filtros',20,1000,10,10,'hpf',sKhz,vKhz).wrap,
+    S('vrHpq','Inclinação dos graves',W+', filtros',.5,2,.1,.1,'hpq',v=>num(v),v=>num(v)).wrap,
+    S('vrLpf','Corta agudos acima de',W+', filtros',1000,16000,100,500,'lpf',sKhz,vKhz).wrap,
+    S('vrLpq','Inclinação dos agudos',W+', filtros',.5,2,.1,.1,'lpq',v=>num(v),v=>num(v)).wrap);
+  const compBtn=btn('Compressão pelo canal da voz ligada',()=>{
+    VR.compOn=!VR.compOn;compBtn.setAttribute('aria-pressed',String(VR.compOn));lvVR();say(VR.compOn?'Compressão ligada':'Compressão desligada');
+  },'btn',{id:'vrcomp','aria-pressed':'true','aria-label':'Reverb de voz, compressão pelo canal da voz ligada'});
+  const m3=h('div',{class:'pcol'},h('h3',{text:'3. Compressor com sidechain'}),compBtn,
+    S('vrThr','Limiar',W+', compressor',-40,0,1,1,'thr',v=>sDb(v),v=>vDb(v)).wrap,
+    S('vrRatio','Razão',W+', compressor',1,10,.5,.5,'ratio',v=>num(v)+' para 1',v=>num(v)+':1').wrap,
+    S('vrAtt','Ataque',W+', compressor',1,50,1,1,'att',sMs,vMs).wrap,
+    S('vrRel','Soltura',W+', compressor',20,800,10,10,'rel',sMs,vMs).wrap);
+  const PRE={grande:[2.8,20,85],medio:[1.8,15,60],sala:[.9,8,35],placa:[1.4,2,55]};
+  const preSel=selectField('vrPreset','Tipo de reverb',[['grande','Salão grande'],['medio','Salão médio'],['sala','Sala pequena'],['placa','Placa']],'grande',(v,t)=>{
+    const p=PRE[v];if(!p)return;
+    quiet=true;try{SL.vrDecay(p[0],false);SL.vrPre(p[1],false);SL.vrSize(p[2],false)}finally{quiet=false}
+    lvVR();say('Reverb: '+t);
+  });
+  const sSec=v=>num(v)+' segundos',vSec=v=>(Math.round(v*10)/10).toFixed(1).replace('.',',')+' s';
+  const m4=h('div',{class:'pcol'},h('h3',{text:'4. Reverb de salão'}),preSel,
+    S('vrDecay','Tempo de decaimento',W+', reverb',.3,6,.1,.1,'decay',sSec,vSec).wrap,
+    S('vrPre','Pré-atraso',W+', reverb',0,200,5,5,'pre',sMs,vMs).wrap,
+    S('vrSize','Tamanho',W+', reverb',10,100,5,5,'size',sPct,vPct).wrap,
+    S('vrMix','Mistura com o sinal seco da cadeia',W+', reverb',0,100,5,5,'mix',sPct,vPct).wrap);
+  sec.append(h('div',{class:'pgrid'},m1,m2,m3,m4));
 })();
 
 /* ---------- afinação de voz ---------- */
