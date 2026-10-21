@@ -154,6 +154,12 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 .note{margin-top:28px;color:var(--muted);max-width:70ch;border-top:1px solid var(--line);padding-top:14px}
 
 /* v2: seções recolhíveis, menu do canal, horizontal */
+/* player: Gravar em cima, Tocar embaixo, Voltar e Avançar juntos */
+.transport{display:grid;grid-template-columns:1fr 1fr}
+.transport .btn.rec{grid-column:1/-1;min-height:56px;font-size:1.1rem}
+.transport #btnPos,.transport .posrow,.transport .time{grid-column:1/-1}
+.transport .time{text-align:right;margin-left:0}
+
 .transport{gap:6px;padding:8px;margin-block:8px 0}
 .transport .btn{flex:1 1 auto;min-width:0;padding:0 8px}
 .transport .btn.primary{min-width:0}
@@ -216,6 +222,8 @@ header .field label{font-size:.85rem}
   header{flex-wrap:nowrap}
   header .lead,.note{display:none}
   .transport{position:static;margin-block:6px;padding:6px 8px;gap:6px}
+  .transport{display:flex}
+  .transport .btn.rec{min-height:44px;font-size:1rem}
   .transport .btn{min-height:44px;padding:0 10px}
   .time{font-size:.95rem}
   .posrow{flex-basis:110px;min-width:100px}
@@ -249,8 +257,8 @@ header .field label{font-size:.85rem}
   </header>
 
   <section class="transport" aria-label="Reprodução">
-    <button type="button" class="btn primary" id="btnPlay">Tocar</button>
     <button type="button" class="btn rec" id="btnRec">Gravar</button>
+    <button type="button" class="btn primary" id="btnPlay">Tocar</button>
     <button type="button" class="btn" id="btnStop" aria-label="Parar e voltar ao início">Parar</button>
     <button type="button" class="btn" id="btnBack">Voltar 5 s</button>
     <button type="button" class="btn" id="btnFwd">Avançar 5 s</button>
