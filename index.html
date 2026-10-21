@@ -196,7 +196,9 @@ body.menu-open{overflow:hidden}
 .help-box ol,.help-box ul{margin:6px 0;padding-left:22px}
 .help-box li{margin:4px 0}
 header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
-#btnHelp{min-height:44px;padding:0 10px;font-size:.9rem}
+#btnHelp,#btnProj{min-height:44px;padding:0 10px;font-size:.9rem}
+.proj-box .panel{margin-top:0}
+header #btnHelp,header #btnProj{flex:1 1 auto}
 .grid.view-compacto .card h3{order:1;min-width:0}
 .grid.view-compacto .pair{order:2}
 .grid.view-compacto .more-btn{order:3}
@@ -230,12 +232,13 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
   <header>
     <h1>Mesa de Áudio</h1>
     <p class="lead sr-only">Seis canais e um Master. Grave, edite, mixe e exporte. Toque duas vezes em “Ajustes e efeitos” de um canal para mexer só naquele canal.</p>
-      <button type="button" class="btn" id="btnHelp" aria-haspopup="dialog">Instruções do aplicativo</button>
+      <button type="button" class="btn" id="btnProj" aria-haspopup="dialog">Projetos e arquivos</button>
+    <button type="button" class="btn" id="btnHelp" aria-haspopup="dialog" aria-label="Instruções do aplicativo">Instruções</button>
   </header>
 
   <section class="transport" aria-label="Reprodução">
     <button type="button" class="btn primary" id="btnPlay">Tocar</button>
-    <button type="button" class="btn rec" id="btnRec" aria-label="Gravar no Canal 1">Gravar</button>
+    <button type="button" class="btn rec" id="btnRec">Gravar</button>
     <button type="button" class="btn" id="btnStop" aria-label="Parar e voltar ao início">Parar</button>
     <button type="button" class="btn" id="btnBack">Voltar 5 s</button>
     <button type="button" class="btn" id="btnFwd">Avançar 5 s</button>
@@ -269,7 +272,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
     </div>
 
     <div class="colR" id="colR">
-      <section class="panel" id="fileSec" aria-labelledby="h-files">
+      <section class="panel" id="fileSec" aria-labelledby="h-files" hidden>
         <h2 id="h-files">Arquivos e ajuda</h2>
         <div class="tools">
           <button type="button" class="btn" id="btnMulti">Carregar vários arquivos (canais 1 a 6, em ordem)</button>
@@ -289,7 +292,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
           </ul>
         </details>
       </section>
-      <section class="panel" id="projSec" aria-labelledby="h-proj"></section>
+      <section class="panel" id="projSec" aria-labelledby="h-proj" hidden></section>
       <section class="panel" id="recSec" aria-labelledby="h-rec"></section>
       <section class="panel" id="metSec" aria-labelledby="h-met"></section>
       <section class="panel" id="edSec" aria-labelledby="h-ed"></section>
@@ -310,11 +313,22 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
     </div>
     <div class="menu-tools">
       <button type="button" class="btn" id="menuPlay">Tocar</button>
+      <button type="button" class="btn rec" id="menuRec">Gravar</button>
       <button type="button" class="btn quiet" id="menuPrev">‹ Canal anterior</button>
       <button type="button" class="btn quiet" id="menuNext">Próximo canal ›</button>
       <span class="time" id="menuTime" aria-hidden="true"></span>
     </div>
     <div class="menu-body" id="menuBody"></div>
+  </div>
+</div>
+
+<div id="projLayer" class="menu-layer" role="dialog" aria-modal="true" aria-labelledby="projTitle" hidden>
+  <div class="menu-box proj-box">
+    <div class="menu-head">
+      <h2 id="projTitle" tabindex="-1">Projetos e arquivos</h2>
+      <button type="button" class="btn primary" id="projClose">Fechar</button>
+    </div>
+    <div id="projBody" class="menu-body" style="grid-template-columns:1fr"></div>
   </div>
 </div>
 
@@ -327,7 +341,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
     <p class="hint">Dica para leitor de tela: use a navegação por títulos (NVDA: tecla H; TalkBack: Títulos nos controles de leitura) para pular entre os assuntos.</p>
 
     <h3>1. Como o aplicativo é organizado</h3>
-    <p>No topo ficam o botão de instruções e o player, com Tocar, Parar, Voltar 5 s, Avançar 5 s, Dizer posição e a barra Posição. Abaixo ficam as listas “Ir para” e “Visualização dos canais”, depois os seis canais e, por último, as seções que abrem e fecham: Arquivos e ajuda, Projetos, Gravação, Metrônomo, Edição, Afinação de voz, Reverb de voz e Master. Abrir uma seção fecha as outras. Em celular deitado, as listas ficam à esquerda, os canais no meio e as seções à direita.</p>
+    <p>No topo ficam o botão de instruções e o player, com Tocar, Parar, Voltar 5 s, Avançar 5 s, Dizer posição e a barra Posição. Os botões “Projetos e arquivos” e “Instruções do aplicativo” ficam no topo. Abaixo ficam as listas “Ir para” e “Visualização dos canais”, depois os seis canais e, por último, as seções que abrem e fecham: Gravação, Metrônomo, Edição, Afinação de voz, Reverb de voz e Master. Abrir uma seção fecha as outras. Em celular deitado, as listas ficam à esquerda, os canais no meio e as seções à direita.</p>
     <p>A lista “Ir para” leva direto a um canal ou a uma seção. A lista “Visualização dos canais” muda como os canais aparecem. Compacto mostra só volume, mudo, solo e o botão Ajustes e efeitos.</p>
 
     <h3>2. Carregar um arquivo de áudio</h3>
@@ -335,7 +349,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
       <li>Em um canal, ative “Ajustes e efeitos”. No modo Lista, Lado a lado ou Um canal por vez, o botão “Carregar áudio” aparece direto no canal.</li>
       <li>Ative “Carregar áudio” e escolha o arquivo no aparelho. Funcionam WAV, MP3, M4A, AAC, OGG, FLAC e OPUS.</li>
       <li>O leitor avisa quando o canal foi carregado. O resumo do canal passa a mostrar o nome e a duração.</li>
-      <li>Para carregar vários de uma vez, abra a seção “Arquivos e ajuda” e use “Carregar vários arquivos”: eles vão para os canais 1 a 6, em ordem. O botão de sons de exemplo serve para testar.</li>
+      <li>Para carregar vários de uma vez, use o botão “Projetos e arquivos”, no topo, e ali “Carregar vários arquivos”: eles vão para os canais 1 a 6, em ordem. O botão de sons de exemplo serve para testar.</li>
       <li>Para tirar o áudio de um canal, use “Remover áudio”.</li>
     </ol>
 
@@ -389,7 +403,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 
     <h3>10. Salvar, abrir e exportar</h3>
     <ol>
-      <li>Seção Projetos: digite um nome e ative “Salvar projeto no aparelho”. Ele guarda os áudios e todos os ajustes.</li>
+      <li>Botão “Projetos e arquivos”, no topo: digite um nome e ative “Salvar projeto no aparelho”. Ele guarda os áudios e todos os ajustes.</li>
       <li>Para continuar depois, escolha na lista e ative “Abrir projeto selecionado”. Se houver alterações não salvas, o aplicativo pede para apertar de novo.</li>
       <li>“Exportar projeto em arquivo” e “Importar projeto de arquivo” levam o projeto para outro aparelho.</li>
       <li>Para ter a música pronta, use “Exportar mixagem em WAV” ou “Exportar mixagem em MP3” (o MP3 precisa de internet na primeira vez).</li>
@@ -399,7 +413,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
     <ul>
       <li>Espaço toca e pausa. Números de 1 a 6 vão ao canal.</li>
       <li>M e S ligam mudo e solo do canal em foco. X marca ponto de seleção.</li>
-      <li>Esc fecha o menu do canal ou estas instruções.</li>
+      <li>Esc fecha o menu do canal, Projetos e arquivos, ou estas instruções.</li>
     </ul>
 
     <p><button type="button" class="btn primary" id="helpClose2">Fechar instruções</button></p>
@@ -2214,10 +2228,11 @@ function makeAcc(sec,group){
   });
   accs.push(o);return o;
 }
-['fileSec','projSec','recSec','metSec','edSec','tuSec','vrSec','masterSec'].forEach(id=>makeAcc($(id),'R'));
+['recSec','metSec','edSec','tuSec','vrSec','masterSec'].forEach(id=>makeAcc($(id),'R'));
 const SECNAME={files:['fileSec','Arquivos e ajuda'],proj:['projSec','Projetos'],rec:['recSec','Gravação'],met:['metSec','Metrônomo'],ed:['edSec','Edição'],tu:['tuSec','Afinação de voz'],vr:['vrSec','Reverb de voz'],master:['masterSec','Master']};
 function goSection(id){
   if(menuOpen)closeMenu(true);
+  if(id==='proj'||id==='files'){openProj();return}
   const x=SECNAME[id];if(!x)return;
   const a=accs.find(q=>q.sec.id===x[0]);
   accs.forEach(q=>{if(q!==a)q.set(false)});
@@ -2275,13 +2290,41 @@ new MutationObserver(()=>{$('menuTime').textContent=tempo.textContent}).observe(
 
 /* botão Gravar do topo */
 const btnRec=$('btnRec');
-btnRec.addEventListener('click',()=>{R.state==='idle'?startRecording():stopRecording()});
+/* o texto muda no mesmo nó, sem recriar o botão, para o leitor de tela não perder o foco */
+function stableText(el){
+  const tn=document.createTextNode(el.textContent);el.textContent='';el.append(tn);
+  Object.defineProperty(el,'textContent',{get(){return tn.nodeValue},set(v){if(tn.nodeValue!==String(v))tn.nodeValue=String(v)},configurable:true});
+}
+[btnPlay,btnRec,recBtn,$('menuPlay'),$('menuRec')].forEach(stableText);
+$('menuRec').addEventListener('click',()=>{R.state==='idle'?startRecording():stopRecording();keepFocus($('menuRec'))});
+const keepFocus=el=>setTimeout(()=>{if(document.activeElement!==el&&!menuOpen&&!helpOpen)el.focus()},60);
+btnRec.addEventListener('click',()=>{R.state==='idle'?startRecording():stopRecording();keepFocus(btnRec)});
+btnPlay.addEventListener('click',()=>keepFocus(btnPlay));
 new MutationObserver(()=>{
   btnRec.textContent=R.state==='idle'?'Gravar':R.state==='count'?'Cancelar':'Parar gravação';
-  btnRec.setAttribute('aria-label',recBtn.textContent);
   btnRec.classList.toggle('on',R.state!=='idle');
+  $('menuRec').textContent=btnRec.textContent;$('menuRec').classList.toggle('on',R.state!=='idle');
 }).observe(recBtn,{childList:true,characterData:true,subtree:true});
 recLabel();
+/* projetos e arquivos */
+let projOpen=false;
+const projLayer=$('projLayer'),projBody=$('projBody'),colR=$('colR');
+function openProj(){
+  if(projOpen)return;
+  projOpen=true;
+  [$('fileSec'),$('projSec')].forEach(x=>{x.hidden=false;projBody.append(x)});
+  projLayer.hidden=false;mainEl.inert=true;document.body.classList.add('menu-open');
+  projLayer.scrollTop=0;$('projTitle').focus();say('Projetos e arquivos. Use Fechar quando terminar.');
+}
+function closeProj(){
+  if(!projOpen)return;
+  projOpen=false;
+  [$('projSec'),$('fileSec')].forEach(x=>{x.hidden=true;colR.prepend(x)});
+  projLayer.hidden=true;mainEl.inert=false;document.body.classList.remove('menu-open');
+  $('btnProj').focus();say('Menu fechado.');
+}
+$('btnProj').addEventListener('click',openProj);
+$('projClose').addEventListener('click',closeProj);
 /* instruções */
 let helpOpen=false;
 const helpLayer=$('helpLayer');
@@ -2342,6 +2385,7 @@ goSel.addEventListener('change',()=>{
 /* teclado */
 document.addEventListener('keydown',e=>{
   const t=e.target,tag=t.tagName;
+  if(e.key==='Escape'&&projOpen){e.preventDefault();closeProj();return}
   if(e.key==='Escape'&&helpOpen){e.preventDefault();closeHelp();return}
   if(e.key==='Escape'&&menuOpen){e.preventDefault();closeMenu();return}
   const typing=(tag==='SELECT'||tag==='TEXTAREA'||(tag==='INPUT'&&t.type!=='range'));
