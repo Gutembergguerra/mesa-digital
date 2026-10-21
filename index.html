@@ -1377,6 +1377,15 @@ const FXID={pre:'pg',heat:'ph',low:'el',mid:'em',high:'eh',dTime:'dt',dFb:'df',d
 const FXPRESET={
   voz:{pre:3,heat:10,low:-2,mid:2,high:3,dOn:false,cOn:false},
   violao:{pre:0,heat:0,low:2,mid:-1,high:2,dOn:false,cOn:false},
+  musica:{pre:0,heat:0,low:1,mid:0,high:1,dOn:false,cOn:false},
+  musicabrilho:{pre:0,heat:0,low:0,mid:-1,high:3,dOn:false,cOn:false},
+  musicagraves:{pre:0,heat:0,low:3,mid:-1,high:1,dOn:false,cOn:false},
+  musicasuave:{pre:0,heat:0,low:-1,mid:0,high:-2,dOn:false,cOn:false},
+  vozgrave:{pre:2,heat:10,low:1,mid:2,high:2,dOn:false,cOn:false},
+  vozaguda:{pre:2,heat:10,low:-4,mid:1,high:2,dOn:false,cOn:false},
+  baixo:{pre:0,heat:15,low:3,mid:-1,high:-2,dOn:false,cOn:false},
+  bateria:{pre:0,heat:10,low:2,mid:-2,high:3,dOn:false,cOn:false},
+  teclado:{pre:0,heat:0,low:0,mid:1,high:1,dOn:false,cOn:false},
   limpo:Object.assign({},FXDEF,{dOn:false,cOn:false})
 };
 function setFx(c,vals){
@@ -1398,6 +1407,15 @@ function buildExtras(c){
     h('option',{value:'',text:'Escolher preset…'}),
     h('option',{value:'voz',text:'Voz: realce de médios e agudos'}),
     h('option',{value:'violao',text:'Violão: graves leves e brilho'}),
+    h('option',{value:'vozgrave',text:'Voz grave: corpo e presença'}),
+    h('option',{value:'vozaguda',text:'Voz aguda: menos grave, mais presença'}),
+    h('option',{value:'baixo',text:'Baixo: graves firmes'}),
+    h('option',{value:'bateria',text:'Bateria: graves e ataque'}),
+    h('option',{value:'teclado',text:'Teclado ou piano: leve presença'}),
+    h('option',{value:'musica',text:'Música completa: equilibrada'}),
+    h('option',{value:'musicabrilho',text:'Música completa: mais brilho'}),
+    h('option',{value:'musicagraves',text:'Música completa: mais graves'}),
+    h('option',{value:'musicasuave',text:'Música completa: suave, menos agudos'}),
     h('option',{value:'limpo',text:'Limpo: zera todos os efeitos'}));
   pr.addEventListener('change',()=>{
     const v=pr.value,txt=pr.options[pr.selectedIndex].text;pr.value='';
