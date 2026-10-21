@@ -154,6 +154,24 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 .note{margin-top:28px;color:var(--muted);max-width:70ch;border-top:1px solid var(--line);padding-top:14px}
 
 /* v2: seções recolhíveis, menu do canal, horizontal */
+@media (min-width:720px){
+  .transport{display:flex}
+  .transport .btn.rec{min-height:48px;font-size:1rem;min-width:110px}
+  .transport #btnPos,.transport .posrow{grid-column:auto}
+  .transport .time{margin-left:auto}
+}
+/* faixas */
+.tbar{display:none}
+.grid.view-faixas{grid-template-columns:1fr;gap:8px}
+.grid.view-faixas .tbar{display:flex;flex-wrap:wrap;gap:6px}
+.tbar .btn{min-height:44px;padding:0 10px}
+.grid.view-faixas .card>.filerow,.grid.view-faixas .card>.ctl,.grid.view-faixas .card>details.fx,.grid.view-faixas .card>.pair,.grid.view-faixas .card>.more-btn{display:none}
+.grid.view-faixas .card>.pane-show{display:flex!important;flex-direction:column}
+.grid.view-faixas .card>details.pane-show{display:block!important}
+.grid.view-faixas .card>details.pane-show>summary{display:none}
+.tb-open[aria-expanded="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tb-open[aria-expanded="true"]::after{content:" ▾"}
+
 /* player: Gravar em cima, Tocar embaixo, Voltar e Avançar juntos */
 .transport{display:grid;grid-template-columns:1fr 1fr}
 .transport .btn.rec{grid-column:1/-1;min-height:56px;font-size:1.1rem}
@@ -247,6 +265,7 @@ header .field label{font-size:.85rem}
       <button type="button" class="btn" id="btnProj" aria-haspopup="dialog">Projetos e arquivos</button>
     <div class="field"><label for="viewSel">Visualização dos canais</label>
         <select id="viewSel" data-nav>
+          <option value="faixas">Faixas: botões por canal, com setas</option>
           <option value="compacto">Compacto: volume, mudo e solo</option>
           <option value="lista">Lista completa</option>
           <option value="lado">Lado a lado</option>
@@ -383,6 +402,17 @@ header .field label{font-size:.85rem}
       <li>“Copiar efeitos deste canal para” leva os mesmos efeitos a outro canal ou a todos. “Restaurar efeitos” zera, e pede para apertar duas vezes.</li>
       <li>“Canal anterior” e “Próximo canal” trocam de canal sem sair. Para voltar à mesa, ative “Fechar” (ou Esc no teclado).</li>
     </ol>
+
+    <h3>4b. Visualização Faixas: botões por canal, com setas</h3>
+    <p>Na lista “Visualização dos canais”, escolha “Faixas”. No computador, ela já vem escolhida na primeira vez. Cada canal vira uma linha de botões, nesta ordem: Armar, Volume, Mudo, Solo, Pan, Pré-amplificador, Equalizador, Delay, Chorus, Áudio e Mais.</p>
+    <ul>
+      <li>Com Tab você entra na linha do canal. Use a seta para a direita e a seta para a esquerda para passar de um botão ao outro. Home vai ao primeiro e End vai ao último.</li>
+      <li>A seta para baixo e a seta para cima levam ao mesmo botão do canal de baixo ou de cima.</li>
+      <li>Armar, Mudo e Solo ligam e desligam na hora com Enter ou Espaço.</li>
+      <li>Volume, Pan, Pré-amplificador, Equalizador, Delay, Chorus e Áudio abrem as opções daquele item logo abaixo da linha, e o foco vai para elas. Ative o mesmo botão de novo, ou aperte Esc, para voltar à linha. Só um item fica aberto por vez.</li>
+      <li>“Mais” abre a tela com presets, copiar efeitos e restaurar. “Áudio” tem carregar e remover áudio do canal.</li>
+      <li>No celular, essa visualização também funciona: os botões quebram em mais de uma linha e o TalkBack passa por eles deslizando.</li>
+    </ul>
 
     <h3>5. Gravar em um canal</h3>
     <ol>
@@ -1518,6 +1548,76 @@ function doSnap(){
 }
 
 /* ---------- construção da interface ---------- */
+/* faixa: uma linha de botões por canal, navegável com setas */
+const BAR=[['vol','Volume'],['pan','Pan'],['pre','Pré-amplificador'],['eq','Equalizador'],['dly','Delay'],['cho','Chorus'],['file','Áudio']];
+function buildBar(c,panes,moreBtn){
+  const who=c.who;
+  c.panes=panes;c.pane=null;c.openers={};
+  c.tb=h('div',{class:'tbar',role:'toolbar','aria-label':who+', controles. Use as setas para a direita e para a esquerda.','aria-orientation':'horizontal'});
+  BAR.forEach(([k,label])=>{
+    const b=btn(label,()=>togglePane(c,k),'btn tb-open',{'aria-expanded':'false','aria-label':who+', '+label.toLowerCase()});
+    c.openers[k]=b;
+  });
+  const mais=btn('Mais',()=>openMenu(c.i,mais),'btn tb-open',{'aria-label':who+', mais ajustes: presets, copiar efeitos, restaurar','aria-haspopup':'dialog'});
+  c.openers.mais=mais;
+  c.tb.append(c.openers.vol,c.openers.pan,c.openers.pre,c.openers.eq,c.openers.dly,c.openers.cho,c.openers.file,mais);
+  c.tb.addEventListener('keydown',e=>barKey(c,e));
+  c.sec.querySelector('h3').after(c.tb);
+  c.sec.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&view==='faixas'&&c.pane&&!menuOpen&&!e.target.closest('.tbar')){
+      e.preventDefault();e.stopPropagation();c.openers[c.pane].focus();
+    }
+  });
+}
+function barItems(c){return Array.from(c.tb.querySelectorAll('button'))}
+function barRove(c,idx){
+  const it=barItems(c);it.forEach((b,i)=>b.setAttribute('tabindex',i===idx?'0':'-1'));
+}
+function barKey(c,e){
+  const it=barItems(c),i=it.indexOf(document.activeElement);if(i<0)return;
+  let n=-1;
+  if(e.key==='ArrowRight')n=Math.min(it.length-1,i+1);
+  else if(e.key==='ArrowLeft')n=Math.max(0,i-1);
+  else if(e.key==='Home')n=0;
+  else if(e.key==='End')n=it.length-1;
+  else if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    const k=c.i+(e.key==='ArrowDown'?1:-1);
+    if(k<0||k>=N)return;
+    e.preventDefault();const o=chans[k];barRove(o,Math.min(i,barItems(o).length-1));barItems(o)[Math.min(i,barItems(o).length-1)].focus();return;
+  }
+  else return;
+  e.preventDefault();barRove(c,n);it[n].focus();
+}
+function barEnter(c){
+  if(c.inBar)return;c.inBar=true;
+  c.tb.insertBefore(c.armBtn,c.openers.vol);
+  c.tb.insertBefore(c.muteBtn,c.openers.pan);
+  c.tb.insertBefore(c.soloBtn,c.openers.pan);
+  barRove(c,0);
+}
+function barLeave(c){
+  if(!c.inBar)return;c.inBar=false;
+  showPane(c,null,true);
+  c.pairEl.append(c.muteBtn,c.soloBtn,c.armBtn);
+  barItems(c).forEach(b=>b.removeAttribute('tabindex'));
+  c.muteBtn.removeAttribute('tabindex');c.soloBtn.removeAttribute('tabindex');c.armBtn.removeAttribute('tabindex');
+}
+function showPane(c,k,silent){
+  Object.keys(c.panes).forEach(x=>{
+    c.panes[x].classList.toggle('pane-show',x===k);
+    if(c.openers[x])c.openers[x].setAttribute('aria-expanded',String(x===k));
+  });
+  c.pane=k;
+  if(k&&c.panes[k].tagName==='DETAILS')c.panes[k].open=true;
+}
+function togglePane(c,k){
+  if(c.pane===k){showPane(c,null);say(c.who+', '+BAR.find(x=>x[0]===k)[1]+', fechado.');return}
+  showPane(c,k);
+  const label=BAR.find(x=>x[0]===k)[1];
+  const f=c.panes[k].querySelector('input[type=range]')||c.panes[k].querySelector('button,select');
+  if(f)f.focus();
+  say(c.who+', '+label+', opções abertas. Esc volta para a faixa.');
+}
 const FXDEF={pre:0,heat:0,low:0,mid:0,high:0,dTime:300,dFb:35,dMix:30,cRate:.8,cDepth:50,cMix:40};
 const FXID={pre:'pg',heat:'ph',low:'el',mid:'em',high:'eh',dTime:'dt',dFb:'df',dMix:'dm',cRate:'cr',cDepth:'cd',cMix:'cm'};
 const FXPRESET={
@@ -1663,6 +1763,8 @@ function buildChannel(i){
     vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo,arm),more,
     preBox,eqBox,dBox,cBox,c.extra);
   c.menuNodes=[filerow,pan.wrap,preBox,eqBox,dBox,cBox,c.extra];
+  c.pairEl=c.sec.querySelector('.pair');
+  buildBar(c,{vol:vol.wrap,pan:pan.wrap,pre:preBox,eq:eqBox,dly:dBox,cho:cBox,file:filerow},more);
   c.sec.addEventListener('dblclick',e=>{if(e.target.closest('input,button,select,summary,a'))return;openMenu(c.i,more)});
   c.sec.addEventListener('contextmenu',e=>{if(e.target.closest('input,button,select,summary,a'))return;e.preventDefault();openMenu(c.i,more)});
   c.sec.style.setProperty('--h',String([205,160,35,285,345,95][i]));
@@ -2355,13 +2457,13 @@ $('helpClose2').addEventListener('click',closeHelp);
 
 /* visualização */
 let view='compacto',one=0;
-const VIEWNAME={lista:'lista completa',lado:'lado a lado',um:'um canal por vez',mesa:'mesa com faders na vertical',compacto:'compacto, só volume, mudo e solo'};
+const VIEWNAME={faixas:'faixas, uma linha de botões por canal',lista:'lista completa',lado:'lado a lado',um:'um canal por vez',mesa:'mesa com faders na vertical',compacto:'compacto, só volume, mudo e solo'};
 const viewSel=$('viewSel'),goSel=$('goSel');
 const chnav=$('chnav'),chSel=$('chSel');
 for(let q=0;q<N;q++)chSel.append(h('option',{value:q,text:'Canal '+(q+1)}));
 function applyView(){
   grid.className='grid view-'+view;
-  chans.forEach((c,k)=>{c.sec.hidden=(view==='um'&&k!==one)});
+  chans.forEach((c,k)=>{c.sec.hidden=(view==='um'&&k!==one);if(view==='faixas')barEnter(c);else barLeave(c)});
   chnav.hidden=(view!=='um');
   chSel.value=String(one);viewSel.value=view;
 }
@@ -2380,7 +2482,11 @@ $('chPrev').addEventListener('click',()=>showChannel((one+N-1)%N));
 $('chNext').addEventListener('click',()=>showChannel((one+1)%N));
 chSel.addEventListener('change',()=>showChannel(+chSel.value));
 $('chMaster').addEventListener('click',()=>goSection('master'));
-try{const sv=localStorage.getItem('mesa-view2');if(sv&&VIEWNAME[sv])view=sv}catch(e){}
+try{
+  const sv=localStorage.getItem('mesa-view2');
+  if(sv&&VIEWNAME[sv])view=sv;
+  else if(window.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches)view='faixas';
+}catch(e){}
 applyView();
 
 /* ir para */
