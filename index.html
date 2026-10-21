@@ -152,79 +152,158 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 .grid.view-compacto .pair{grid-template-columns:auto auto}
 .grid.view-compacto .more-btn{display:inline-flex;align-items:center}
 .note{margin-top:28px;color:var(--muted);max-width:70ch;border-top:1px solid var(--line);padding-top:14px}
+
+/* v2: seções recolhíveis, menu do canal, horizontal */
+.transport{gap:6px;padding:8px;margin-block:8px 0}
+.transport .btn{flex:1 1 auto;min-width:0;padding:0 8px}
+.transport .btn.primary{min-width:0}
+.colL{flex-direction:row;gap:8px;margin-top:8px}
+.colL .field{flex:1;min-width:0}
+.colL .field label{font-size:.85rem}
+h1{font-size:1.4rem;margin:0}
+.cols{display:block}
+.colL{display:flex;margin-top:8px}
+.colC{margin-top:6px}
+.colC>h2{margin:14px 0 10px}
+.colR{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.colR>.panel,.colR>.master{margin-top:0}
+.acc>h2{margin:0;font-size:1.1rem}
+.acc-btn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:52px;padding:0 4px;background:none;border:0;color:var(--fg);font:700 1.1rem var(--font-body);cursor:pointer;text-align:left}
+.acc-body{margin-top:12px;display:flex;flex-direction:column;gap:14px}
+.posrow{display:flex;align-items:center;gap:8px;flex:1 1 180px;min-width:150px}
+.posrow label{font-weight:700;font-size:.95rem}
+.posrow input{flex:1;min-width:0;height:40px;accent-color:var(--accent)}
+.sum{color:var(--muted);font-size:.9rem;overflow-wrap:anywhere;margin:0}
+.grid.view-lista .sum,.grid.view-lado .sum,.grid.view-um .sum{display:none}
+.grid.view-mesa .more-btn{display:inline-flex;align-items:center;justify-content:center}
+.grid.view-mesa details.fx{display:none}
+.grid.view-compacto .sum{flex:1 1 100%;order:9}
+.menu-layer{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding:max(12px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.menu-box{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.menu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.menu-head h2{margin:0;font-size:1.3rem}
+.menu-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.menu-body{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));align-items:start}
+.menu-body>*{min-width:0}
+.menu-body>.xtra{grid-column:1/-1;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));border-top:1px solid var(--line);padding-top:12px}
+body.menu-open{overflow:hidden}
+.grid.view-compacto .card h3{order:1;min-width:0}
+.grid.view-compacto .pair{order:2}
+.grid.view-compacto .more-btn{order:3}
+.grid.view-compacto .ctl-vol{order:4;flex:1 1 100%}
+.grid.view-compacto .card{gap:6px 8px}
+.grid.view-compacto .card .btn{padding:0 10px}
+@media (orientation:landscape) and (max-height:560px){
+  body{padding-block:6px 6px}
+  .wrap{display:flex;flex-direction:column;height:calc(100dvh - 12px)}
+  header{display:flex;align-items:baseline;gap:12px}
+  header h1{font-size:1.1rem;margin:0}
+  header .lead,.note{display:none}
+  .transport{position:static;margin-block:6px;padding:6px 8px;gap:6px}
+  .transport .btn{min-height:44px;padding:0 10px}
+  .time{font-size:.95rem}
+  .posrow{flex-basis:110px;min-width:100px}
+  .grid.view-compacto .card{padding:6px 8px}
+  .colL{flex-direction:column}
+  .transport .btn{flex:0 0 auto}
+  .cols{flex:1;min-height:0;display:grid;grid-template-columns:minmax(150px,.7fr) minmax(0,2.1fr) minmax(200px,1fr);gap:10px}
+  .colL,.colC,.colR{margin:0;overflow-y:auto;min-height:0}
+  .colC>h2{margin:0 0 8px}
+  .grid.view-lado,.grid.view-mesa{padding-bottom:8px}
+  .menu-layer{padding-top:6px}
+}
 </style>
 
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="main">
   <header>
     <h1>Mesa de Áudio</h1>
-    <p class="lead">Seis canais e um Master. Grave, edite, mixe e exporte. Todos os controles são botões, campos deslizantes e listas nativos, pensados para NVDA e TalkBack.</p>
-    <nav class="jump" aria-label="Ir para a seção">
-      <a href="#h-proj">Projetos</a>
-      <a href="#h-rec">Gravação</a>
-      <a href="#h-met">Metrônomo</a>
-      <a href="#h-ed">Edição</a>
-      <a href="#h-tu">Afinação</a>
-      <a href="#h-vr">Reverb de voz</a>
-      <a href="#h-canais">Canais</a>
-      <a href="#h-master">Master</a>
-    </nav>
+    <p class="lead sr-only">Seis canais e um Master. Grave, edite, mixe e exporte. Toque duas vezes em “Ajustes e efeitos” de um canal para mexer só naquele canal.</p>
   </header>
 
   <section class="transport" aria-label="Reprodução">
     <button type="button" class="btn primary" id="btnPlay">Tocar</button>
-    <button type="button" class="btn" id="btnStop">Parar e voltar ao início</button>
+    <button type="button" class="btn" id="btnStop" aria-label="Parar e voltar ao início">Parar</button>
     <button type="button" class="btn" id="btnBack">Voltar 5 s</button>
     <button type="button" class="btn" id="btnFwd">Avançar 5 s</button>
     <button type="button" class="btn quiet" id="btnPos">Dizer posição</button>
+    <div class="posrow"><label for="posR">Posição</label><input type="range" id="posR" data-nav min="0" max="0" step="1" value="0" disabled></div>
     <div class="time" id="tempo" aria-hidden="true">00:00.0 / 00:00.0</div>
   </section>
 
-  <div class="tools">
-    <button type="button" class="btn" id="btnMulti">Carregar vários arquivos (canais 1 a 6, em ordem)</button>
-    <input type="file" id="multiIn" hidden multiple accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus">
-    <button type="button" class="btn" id="btnDemo">Carregar sons de exemplo nos 6 canais</button>
+  <div class="cols">
+    <div class="colL" role="group" aria-label="Navegação">
+      <div class="field"><label for="goSel">Ir para</label><select id="goSel" data-nav></select></div>
+      <div class="field"><label for="viewSel">Visualização dos canais</label>
+        <select id="viewSel" data-nav>
+          <option value="compacto">Compacto: volume, mudo e solo</option>
+          <option value="lista">Lista completa</option>
+          <option value="lado">Lado a lado</option>
+          <option value="um">Um canal por vez</option>
+          <option value="mesa">Mesa com faders na vertical</option>
+        </select></div>
+    </div>
+
+    <div class="colC">
+      <h2 id="h-canais" tabindex="-1">Canais</h2>
+      <div class="chnav" id="chnav" hidden>
+        <button type="button" class="btn" id="chPrev" aria-label="Canal anterior">‹ Anterior</button>
+        <select id="chSel" data-nav aria-label="Escolher canal"></select>
+        <button type="button" class="btn" id="chNext" aria-label="Próximo canal">Próximo ›</button>
+        <button type="button" class="btn quiet" id="chMaster">Ir ao Master</button>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="colR" id="colR">
+      <section class="panel" id="fileSec" aria-labelledby="h-files">
+        <h2 id="h-files">Arquivos e ajuda</h2>
+        <div class="tools">
+          <button type="button" class="btn" id="btnMulti">Carregar vários arquivos (canais 1 a 6, em ordem)</button>
+          <input type="file" id="multiIn" hidden multiple accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus">
+          <button type="button" class="btn" id="btnDemo">Carregar sons de exemplo nos 6 canais</button>
+        </div>
+        <details class="help">
+          <summary>Atalhos de teclado</summary>
+          <ul>
+            <li><kbd>Espaço</kbd> toca e pausa, quando o foco não está em um botão ou campo.</li>
+            <li><kbd>1</kbd> a <kbd>6</kbd> levam o foco ao título do canal, ou trocam de canal dentro do menu do canal.</li>
+            <li><kbd>M</kbd> e <kbd>S</kbd> ligam mudo e solo do canal onde o foco está.</li>
+            <li><kbd>X</kbd> marca o próximo ponto da seleção: primeiro o início, depois o fim.</li>
+            <li><kbd>Esc</kbd> fecha o menu do canal.</li>
+            <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz e <kbd>Ctrl</kbd>+<kbd>Y</kbd> refaz a edição do canal escolhido na seção Edição.</li>
+            <li>Em qualquer campo deslizante, as setas ajustam o valor.</li>
+          </ul>
+        </details>
+      </section>
+      <section class="panel" id="projSec" aria-labelledby="h-proj"></section>
+      <section class="panel" id="recSec" aria-labelledby="h-rec"></section>
+      <section class="panel" id="metSec" aria-labelledby="h-met"></section>
+      <section class="panel" id="edSec" aria-labelledby="h-ed"></section>
+      <section class="panel" id="tuSec" aria-labelledby="h-tu"></section>
+      <section class="panel" id="vrSec" aria-labelledby="h-vr"></section>
+      <section class="master" id="masterSec" aria-labelledby="h-master"></section>
+    </div>
   </div>
-
-  <details class="help">
-    <summary>Atalhos de teclado</summary>
-    <ul>
-      <li><kbd>Espaço</kbd> toca e pausa, quando o foco não está em um botão ou campo.</li>
-      <li><kbd>1</kbd> a <kbd>6</kbd> levam o foco ao título do canal.</li>
-      <li><kbd>M</kbd> e <kbd>S</kbd> ligam mudo e solo do canal onde o foco está.</li>
-      <li><kbd>X</kbd> marca o próximo ponto da seleção: primeiro o início, depois o fim.</li>
-      <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz e <kbd>Ctrl</kbd>+<kbd>Y</kbd> refaz a edição do canal escolhido na seção Edição.</li>
-      <li>Em qualquer campo deslizante, as setas ajustam o valor.</li>
-    </ul>
-  </details>
-
-  <section class="panel" id="projSec" aria-labelledby="h-proj"></section>
-  <section class="panel" id="recSec" aria-labelledby="h-rec"></section>
-  <section class="panel" id="metSec" aria-labelledby="h-met"></section>
-  <section class="panel" id="edSec" aria-labelledby="h-ed"></section>
-  <section class="panel" id="tuSec" aria-labelledby="h-tu"></section>
-  <section class="panel" id="vrSec" aria-labelledby="h-vr"></section>
-
-  <h2 id="h-canais" tabindex="-1">Canais</h2>
-  <div class="viewbar" role="group" aria-label="Visualização dos canais">
-    <button type="button" class="btn" data-view="lista" aria-pressed="true">Lista</button>
-    <button type="button" class="btn" data-view="lado" aria-pressed="false">Lado a lado</button>
-    <button type="button" class="btn" data-view="um" aria-pressed="false">Um canal por vez</button>
-    <button type="button" class="btn" data-view="mesa" aria-pressed="false">Mesa com faders na vertical</button>
-    <button type="button" class="btn" data-view="compacto" aria-pressed="false">Compacto</button>
-  </div>
-  <div class="chnav" id="chnav" hidden>
-    <button type="button" class="btn" id="chPrev" aria-label="Canal anterior">‹ Anterior</button>
-    <select id="chSel" aria-label="Escolher canal"></select>
-    <button type="button" class="btn" id="chNext" aria-label="Próximo canal">Próximo ›</button>
-    <button type="button" class="btn quiet" id="chMaster">Ir ao Master</button>
-  </div>
-  <div class="grid" id="grid"></div>
-
-  <section class="master" id="masterSec" aria-labelledby="h-master"></section>
 
   <p class="note">Dica: salve o projeto antes de fechar e use fones ao gravar sobre outras pistas.</p>
+</div>
+
+<div id="menuLayer" class="menu-layer" role="dialog" aria-modal="true" aria-labelledby="menuTitle" hidden>
+  <div class="menu-box">
+    <div class="menu-head">
+      <h2 id="menuTitle" tabindex="-1">Canal 1, ajustes e efeitos</h2>
+      <button type="button" class="btn primary" id="menuClose">Fechar</button>
+    </div>
+    <div class="menu-tools">
+      <button type="button" class="btn" id="menuPlay">Tocar</button>
+      <button type="button" class="btn quiet" id="menuPrev">‹ Canal anterior</button>
+      <button type="button" class="btn quiet" id="menuNext">Próximo canal ›</button>
+      <span class="time" id="menuTime" aria-hidden="true"></span>
+    </div>
+    <div class="menu-body" id="menuBody"></div>
+  </div>
 </div>
 
 <div id="avisos" class="sr-only" role="status" aria-live="polite"></div>
@@ -716,7 +795,7 @@ function buildGraph(C,all){
   return gr;
 }
 function applyCh(gr,C,c,imm){
-  const s=c.s,n=gr.ch[c.i];
+  const s=(c.bypass&&!imm)?Object.assign({},c.s,{pre:0,heat:0,low:0,mid:0,high:0,dOn:false,cOn:false}):c.s,n=gr.ch[c.i];
   setP(C,n.pre.gain,dbToGain(s.pre),imm);
   if(n._heat!==s.heat){n.shp.curve=makeCurve(s.heat/100);n._heat=s.heat}
   setP(C,n.vol.gain,dbToGain(s.vol,-60),imm);
@@ -748,7 +827,7 @@ function applyMaster(gr,C,imm){
   setP(C,m.procOut.gain,M.bypass?0:1,imm);
   setP(C,m.bypass.gain,M.bypass?1:0,imm);
 }
-const lvCh=c=>{if(live)applyCh(live,ctx,c,false)};
+const lvCh=c=>{if(live)applyCh(live,ctx,c,false);refreshSum(c)};
 const lvGates=()=>{if(live)applyGates(live,ctx,false)};
 const lvMaster=()=>{if(live)applyMaster(live,ctx,false)};
 function ensureCtx(){
@@ -774,7 +853,18 @@ function pos(){
 function fmt(t){const m=Math.floor(t/60),s=t-m*60;return String(m).padStart(2,'0')+':'+(s<10?'0':'')+s.toFixed(1)}
 function fmtT(t){const m=Math.floor(t/60);return m+':'+(t-m*60).toFixed(3).padStart(6,'0')}
 function spokenPos(t){const s=Math.floor(t),ms=Math.round((t-s)*1000);return s+(s===1?' segundo':' segundos')+' e '+ms+' milissegundos'}
-function showTime(){tempo.textContent=fmt(pos())+' / '+fmt(dur());if(edCur)edCur.textContent=fmtT(pos())}
+const posR=$('posR');let posDrag=false;
+function spokenDur(t){t=Math.round(t);const m=Math.floor(t/60),q=t%60;const a=m?m+(m===1?' minuto':' minutos'):'';const b2=(q||!m)?q+(q===1?' segundo':' segundos'):'';return a&&b2?a+' e '+b2:a||b2}
+function showTime(){
+  tempo.textContent=fmt(pos())+' / '+fmt(dur());if(edCur)edCur.textContent=fmtT(pos());
+  const d=dur();posR.disabled=!d;posR.max=String(Math.ceil(d));
+  if(!posDrag){
+    posR.value=String(Math.round(pos()));
+    if(document.activeElement!==posR||!playing)posR.setAttribute('aria-valuetext',spokenDur(pos())+' de '+spokenDur(d));
+  }
+}
+posR.addEventListener('input',()=>{posDrag=true;posR.setAttribute('aria-valuetext',spokenDur(+posR.value)+' de '+spokenDur(dur()))});
+posR.addEventListener('change',()=>{const t=+posR.value;seek(t-pos(),true);posDrag=false;showTime()});
 let edCur=null;
 function startSources(off,limitEnd){
   chans.forEach(c=>{
@@ -817,11 +907,11 @@ function stopAll(){
   rangeEnd=null;offset=0;btnPlay.textContent='Tocar';afterStop();showTime();setMeter(-90);
   say('Parado. Posição no início.');
 }
-function seek(d){
+function seek(d,silent){
   const np=Math.max(0,Math.min(dur(),pos()+d));
   if(playing){rangeEnd=null;stopSources();offset=np;startSources(np);startedAt=ctx.currentTime-np}
   else offset=np;
-  showTime();say('Posição: '+spokenPos(np));
+  showTime();if(!silent)say('Posição: '+spokenPos(np));
 }
 function goTo(t){seek(t-pos())}
 function playRange(a,b,ret,msg){
@@ -875,6 +965,16 @@ function tick(){
 /* ---------- canais: arquivos, histórico ---------- */
 function refreshLabel(c){
   c.fileEl.textContent=c.buffer?c.name+(c.edited?' (editado)':'')+', '+sec1(c.buffer.duration)+' s':'Vazio';
+  refreshSum(c);
+}
+function refreshSum(c){
+  if(!c.sumEl)return;
+  const s=c.s,f=[];
+  if(s.pre||s.heat)f.push('pré-amplificador');
+  if(s.low||s.mid||s.high)f.push('equalizador');
+  if(s.dOn)f.push('delay');
+  if(s.cOn)f.push('chorus');
+  c.sumEl.textContent=(c.buffer?c.name+(c.edited?' (editado)':'')+', '+sec1(c.buffer.duration)+' s':'Vazio')+'. '+(f.length?'Efeitos: '+f.join(', ')+'.':'Sem efeitos.')+(c.bypass?' Ouvindo sem efeitos.':'');
 }
 function bufFromData(D,sr){
   const b=ctx.createBuffer(D.length,Math.max(1,D[0].length),sr);
@@ -1272,6 +1372,57 @@ function doSnap(){
 }
 
 /* ---------- construção da interface ---------- */
+const FXDEF={pre:0,heat:0,low:0,mid:0,high:0,dTime:300,dFb:35,dMix:30,cRate:.8,cDepth:50,cMix:40};
+const FXID={pre:'pg',heat:'ph',low:'el',mid:'em',high:'eh',dTime:'dt',dFb:'df',dMix:'dm',cRate:'cr',cDepth:'cd',cMix:'cm'};
+const FXPRESET={
+  voz:{pre:3,heat:10,low:-2,mid:2,high:3,dOn:false,cOn:false},
+  violao:{pre:0,heat:0,low:2,mid:-1,high:2,dOn:false,cOn:false},
+  limpo:Object.assign({},FXDEF,{dOn:false,cOn:false})
+};
+function setFx(c,vals){
+  Object.keys(FXID).forEach(k=>{if(vals[k]!=null)SL[FXID[k]+'c'+c.i](vals[k],false)});
+  [['dOn','do'],['cOn','co']].forEach(([k,id])=>{
+    if(vals[k]==null)return;
+    c.s[k]=!!vals[k];TG[id+'c'+c.i].setAttribute('aria-pressed',String(!!vals[k]));
+  });
+  lvCh(c);
+}
+function buildExtras(c){
+  const p='c'+c.i,who=c.who;
+  const bp=btn('Ouvir sem efeitos',()=>{
+    c.bypass=!c.bypass;bp.setAttribute('aria-pressed',String(c.bypass));lvCh(c);
+    say(who+(c.bypass?': ouvindo sem efeitos. Seus ajustes continuam guardados.':': efeitos de volta.'));
+  },'btn',{'aria-pressed':'false','aria-label':who+', ouvir sem efeitos'});
+  const prW=h('div',{class:'field'},h('label',{for:'pr'+p,text:'Preset de efeitos deste canal'}));
+  const pr=h('select',{id:'pr'+p},
+    h('option',{value:'',text:'Escolher preset…'}),
+    h('option',{value:'voz',text:'Voz: realce de médios e agudos'}),
+    h('option',{value:'violao',text:'Violão: graves leves e brilho'}),
+    h('option',{value:'limpo',text:'Limpo: zera todos os efeitos'}));
+  pr.addEventListener('change',()=>{
+    const v=pr.value,txt=pr.options[pr.selectedIndex].text;pr.value='';
+    if(!v)return;setFx(c,FXPRESET[v]);say(who+': preset aplicado, '+txt);
+  });
+  prW.append(pr);
+  const cpW=h('div',{class:'field'},h('label',{for:'cp'+p,text:'Copiar efeitos deste canal para'}));
+  const cp=h('select',{id:'cp'+p},h('option',{value:'',text:'Escolher canal…'}));
+  chansPlan.forEach(k=>{if(k!==c.i)cp.append(h('option',{value:String(k),text:'Canal '+(k+1)}))});
+  cp.append(h('option',{value:'all',text:'Todos os outros canais'}));
+  cp.addEventListener('change',()=>{
+    const v=cp.value;cp.value='';if(!v)return;
+    const vals={dOn:c.s.dOn,cOn:c.s.cOn};Object.keys(FXID).forEach(k=>{vals[k]=c.s[k]});
+    const tg=v==='all'?chans.filter(t=>t!==c):[chans[+v]];
+    tg.forEach(t=>setFx(t,vals));
+    say('Efeitos do '+who+' copiados para '+(v==='all'?'todos os outros canais':'Canal '+(+v+1))+'.');
+  });
+  cpW.append(cp);
+  const rs=btn('Restaurar efeitos deste canal',()=>{
+    if(!confirmTwice('fxr'+c.i,'Aperte de novo para zerar os efeitos do '+who+'. Volume e pan não mudam.'))return;
+    setFx(c,Object.assign({},FXDEF,{dOn:false,cOn:false}));say('Efeitos do '+who+' restaurados.');
+  },'btn quiet',{'aria-label':who+', restaurar efeitos'});
+  return h('div',{class:'xtra'},bp,prW,cpW,rs);
+}
+const chansPlan=[0,1,2,3,4,5];
 function buildChannel(i){
   const who='Canal '+(i+1),p='c'+i;
   const c={i,who,buffer:null,src:null,name:'',edited:false,undo:[],redo:[],
@@ -1279,6 +1430,7 @@ function buildChannel(i){
        dOn:false,dTime:300,dFb:35,dMix:30,cOn:false,cRate:.8,cDepth:50,cMix:40}};
   c.title=h('h3',{id:'h'+p,tabindex:'-1'},h('span',{class:'chip','aria-hidden':'true',text:String(i+1)}),h('span',{text:who}));
   c.fileEl=h('p',{class:'file',id:'f'+p,text:'Vazio'});
+  c.sumEl=h('p',{class:'sum',id:'sm'+p,text:'Vazio. Sem efeitos.'});
   c.fileInput=h('input',{type:'file',accept:'audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus',id:'in'+p,hidden:true,tabindex:'-1'});
   c.fileInput.addEventListener('change',()=>{const f=c.fileInput.files[0];c.fileInput.value='';loadFile(c,f)});
   const pick=btn('Carregar áudio',()=>c.fileInput.click(),'btn',{'aria-label':who+', carregar áudio','aria-describedby':'f'+p});
@@ -1330,12 +1482,19 @@ function buildChannel(i){
       slider({id:'cm'+p,who:who+', chorus',label:'Mistura',min:0,max:100,step:5,btn:5,value:40,spoken:sPct,short:vPct,onChange:v=>{c.s.cMix=v;lvCh(c)}}).wrap));
 
   vol.wrap.classList.add('ctl-vol');pan.wrap.classList.add('ctl-pan');
-  const more=btn('Mais controles',()=>{one=c.i;setView('um');chans[c.i].title.focus()},'btn more-btn',{'aria-label':who+', mais controles'});
+  const more=btn('Ajustes e efeitos',()=>openMenu(c.i,more),'btn more-btn',{'aria-label':who+', ajustes e efeitos','aria-describedby':'sm'+p});
+  c.moreBtn=more;
+  const filerow=h('div',{class:'filerow'},pick,c.fileInput,c.fileEl,rm);
+  c.extra=buildExtras(c);
+  c.extra.hidden=true;
   c.sec=h('section',{class:'card','aria-labelledby':'h'+p,'data-ch':i},
-    c.title,
-    h('div',{class:'filerow'},pick,c.fileInput,c.fileEl,rm),
+    c.title,c.sumEl,
+    filerow,
     vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo),more,
-    preBox,eqBox,dBox,cBox);
+    preBox,eqBox,dBox,cBox,c.extra);
+  c.menuNodes=[filerow,pan.wrap,preBox,eqBox,dBox,cBox,c.extra];
+  c.sec.addEventListener('dblclick',e=>{if(e.target.closest('input,button,select,summary,a'))return;openMenu(c.i,more)});
+  c.sec.addEventListener('contextmenu',e=>{if(e.target.closest('input,button,select,summary,a'))return;e.preventDefault();openMenu(c.i,more)});
   c.sec.style.setProperty('--h',String([205,160,35,285,345,95][i]));
   chans.push(c);
   return c.sec;
@@ -1882,55 +2041,138 @@ async function importFile(file){
       h('div',{class:'row'},btn('Abrir projeto selecionado',openProject),btn('Apagar projeto selecionado',deleteProject,'btn quiet')))));
   refreshList();
 })();
-const markDirty=e=>{if(!quiet&&!(e.target.closest&&e.target.closest('#projSec')))dirty=true};
+const markDirty=e=>{if(!quiet&&!(e.target.closest&&e.target.closest('#projSec,[data-nav]')))dirty=true};
 document.addEventListener('input',markDirty);
 document.addEventListener('change',markDirty);
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('button[aria-pressed]');
-  if(b&&!b.hasAttribute('data-view'))markDirty(e);
+  if(b&&!b.hasAttribute('data-view')&&!b.classList.contains('acc-btn'))markDirty(e);
 });
 window.addEventListener('beforeunload',e=>{if(dirty&&hasAudio()){e.preventDefault();e.returnValue=''}});
 
+/* seções recolhíveis */
+const accs=[];
+function makeAcc(sec,group){
+  const h2=sec.querySelector(':scope>h2');
+  const body=h('div',{class:'acc-body',id:sec.id+'-body'});
+  Array.from(sec.children).forEach(ch=>{if(ch!==h2)body.append(ch)});
+  const ic=h('span',{class:'acc-ic','aria-hidden':'true',text:'▸'});
+  const b=h('button',{type:'button',class:'acc-btn','aria-expanded':'false','aria-controls':body.id},h('span',{text:h2.textContent}),ic);
+  h2.textContent='';h2.removeAttribute('tabindex');h2.append(b);
+  sec.append(body);body.hidden=true;sec.classList.add('acc');
+  const o={sec,btn:b,group,set(v){b.setAttribute('aria-expanded',String(v));body.hidden=!v;ic.textContent=v?'▾':'▸'}};
+  b.addEventListener('click',()=>{
+    const open=b.getAttribute('aria-expanded')!=='true';
+    if(open)accs.forEach(a=>{if(a!==o&&a.group===group)a.set(false)});
+    o.set(open);
+    say(h2.textContent+(open?', aberto':', fechado'));
+  });
+  accs.push(o);return o;
+}
+['fileSec','projSec','recSec','metSec','edSec','tuSec','vrSec','masterSec'].forEach(id=>makeAcc($(id),'R'));
+const SECNAME={files:['fileSec','Arquivos e ajuda'],proj:['projSec','Projetos'],rec:['recSec','Gravação'],met:['metSec','Metrônomo'],ed:['edSec','Edição'],tu:['tuSec','Afinação de voz'],vr:['vrSec','Reverb de voz'],master:['masterSec','Master']};
+function goSection(id){
+  if(menuOpen)closeMenu(true);
+  const x=SECNAME[id];if(!x)return;
+  const a=accs.find(q=>q.sec.id===x[0]);
+  accs.forEach(q=>{if(q!==a)q.set(false)});
+  a.set(true);a.btn.focus();a.sec.scrollIntoView({block:'start'});
+  say(x[1]+', aberto');
+}
+
+/* menu do canal */
+let menuOpen=false,menuCh=0,menuOpener=null;
+const menuLayer=$('menuLayer'),menuBody=$('menuBody'),menuTitle=$('menuTitle'),mainEl=$('main');
+function menuRestore(){
+  const c=chans[menuCh];
+  c.menuNodes.forEach(n=>{if(n._ph){n._ph.replaceWith(n);n._ph=null}});
+  c.extra.hidden=true;
+}
+function menuFill(k){
+  menuCh=k;const c=chans[k];
+  c.menuNodes.forEach(n=>{const ph=document.createComment('');n.before(ph);n._ph=ph;menuBody.append(n)});
+  c.extra.hidden=false;
+  menuTitle.textContent=c.who+', ajustes e efeitos';
+  ['recCh','edCh','tuCh'].forEach(id=>{const e=SE[id];if(e){e.value=String(k);e.dispatchEvent(new Event('change'))}});
+}
+function openMenu(k,opener){
+  if(menuOpen)return;
+  menuOpener=opener||null;menuOpen=true;
+  const was=quiet;quiet=true;menuFill(k);quiet=was;
+  menuLayer.hidden=false;mainEl.inert=true;document.body.classList.add('menu-open');
+  menuLayer.scrollTop=0;menuTitle.focus();
+  say(chans[k].who+', ajustes e efeitos. Use Fechar quando terminar.');
+}
+function menuShow(k){
+  if(!menuOpen)return;
+  k=(k+N)%N;menuRestore();
+  const was=quiet;quiet=true;menuFill(k);quiet=was;
+  menuOpener=chans[k].moreBtn;menuLayer.scrollTop=0;menuTitle.focus();
+  say(chans[k].who+', ajustes e efeitos.');
+}
+function closeMenu(noFocus){
+  if(!menuOpen)return;
+  const k=menuCh;menuRestore();
+  menuOpen=false;menuLayer.hidden=true;mainEl.inert=false;document.body.classList.remove('menu-open');
+  const o=chans[k].moreBtn;
+  if(!noFocus){
+    const t=(o&&o.offsetParent!==null)?o:chans[k].title;
+    if(view==='um'&&one!==k){one=k;applyView()}
+    t.focus();say('Menu fechado. '+chans[k].who+'.');
+  }
+}
+$('menuClose').addEventListener('click',()=>closeMenu());
+$('menuPrev').addEventListener('click',()=>menuShow(menuCh-1));
+$('menuNext').addEventListener('click',()=>menuShow(menuCh+1));
+$('menuPlay').addEventListener('click',()=>btnPlay.click());
+new MutationObserver(()=>{$('menuPlay').textContent=btnPlay.textContent}).observe(btnPlay,{childList:true,characterData:true,subtree:true});
+new MutationObserver(()=>{$('menuTime').textContent=tempo.textContent}).observe(tempo,{childList:true,characterData:true,subtree:true});
+
 /* visualização */
-let view='lista',one=0;
-const VIEWNAME={lista:'lista',lado:'lado a lado',um:'um canal por vez',mesa:'mesa com faders na vertical',compacto:'compacto, só volume, mudo e solo'};
-const vbtns=Array.from(document.querySelectorAll('[data-view]'));
+let view='compacto',one=0;
+const VIEWNAME={lista:'lista completa',lado:'lado a lado',um:'um canal por vez',mesa:'mesa com faders na vertical',compacto:'compacto, só volume, mudo e solo'};
+const viewSel=$('viewSel'),goSel=$('goSel');
 const chnav=$('chnav'),chSel=$('chSel');
 for(let q=0;q<N;q++)chSel.append(h('option',{value:q,text:'Canal '+(q+1)}));
 function applyView(){
   grid.className='grid view-'+view;
   chans.forEach((c,k)=>{c.sec.hidden=(view==='um'&&k!==one)});
   chnav.hidden=(view!=='um');
-  chSel.value=String(one);
-  vbtns.forEach(b=>b.setAttribute('aria-pressed',String(b.getAttribute('data-view')===view)));
+  chSel.value=String(one);viewSel.value=view;
 }
 function setView(v){
-  view=v;try{localStorage.setItem('mesa-view',v)}catch(e){}
+  view=v;try{localStorage.setItem('mesa-view2',v)}catch(e){}
   applyView();
   say('Visualização: '+VIEWNAME[v]+(v==='um'?'. Mostrando Canal '+(one+1)+' de '+N:''));
 }
 function showChannel(k){
+  if(menuOpen){menuShow(k);return}
   if(view==='um'){one=k;applyView()}
   chans[k].title.focus();
 }
-vbtns.forEach(b=>b.addEventListener('click',()=>setView(b.getAttribute('data-view'))));
+viewSel.addEventListener('change',()=>setView(viewSel.value));
 $('chPrev').addEventListener('click',()=>showChannel((one+N-1)%N));
 $('chNext').addEventListener('click',()=>showChannel((one+1)%N));
 chSel.addEventListener('change',()=>showChannel(+chSel.value));
-$('chMaster').addEventListener('click',()=>$('h-master').focus());
-try{const sv=localStorage.getItem('mesa-view');if(sv&&VIEWNAME[sv])view=sv}catch(e){}
+$('chMaster').addEventListener('click',()=>goSection('master'));
+try{const sv=localStorage.getItem('mesa-view2');if(sv&&VIEWNAME[sv])view=sv}catch(e){}
 applyView();
 
-/* atalhos de seção */
-document.querySelectorAll('.jump a').forEach(a=>a.addEventListener('click',e=>{
-  e.preventDefault();
-  const t=document.getElementById(a.getAttribute('href').slice(1));
-  if(t){t.focus();t.scrollIntoView()}
-}));
+/* ir para */
+goSel.append(h('option',{value:'',text:'Escolher destino…'}),h('option',{value:'canais',text:'Canais'}));
+for(let q=0;q<N;q++)goSel.append(h('option',{value:'c'+q,text:'Canal '+(q+1)}));
+Object.keys(SECNAME).forEach(k=>goSel.append(h('option',{value:k,text:SECNAME[k][1]})));
+goSel.addEventListener('change',()=>{
+  const v=goSel.value;goSel.value='';if(!v)return;
+  if(v==='canais'){$('h-canais').focus();$('h-canais').scrollIntoView();return}
+  if(v[0]==='c'&&/^c\d$/.test(v)){showChannel(+v[1]);chans[+v[1]].sec.scrollIntoView({block:'nearest'});return}
+  goSection(v);
+});
 
 /* teclado */
 document.addEventListener('keydown',e=>{
   const t=e.target,tag=t.tagName;
+  if(e.key==='Escape'&&menuOpen){e.preventDefault();closeMenu();return}
   const typing=(tag==='SELECT'||tag==='TEXTAREA'||(tag==='INPUT'&&t.type!=='range'));
   if(typing)return;
   if(e.ctrlKey&&!e.altKey&&!e.metaKey){
