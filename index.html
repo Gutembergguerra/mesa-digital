@@ -160,7 +160,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 .colL{flex-direction:row;gap:8px;margin-top:8px}
 .colL .field{flex:1;min-width:0}
 .colL .field label{font-size:.85rem}
-h1{font-size:1.4rem;margin:0}
+h1{font-size:1.3rem;margin:0}
 .cols{display:block}
 .colL{display:flex;margin-top:8px}
 .colC{margin-top:6px}
@@ -187,6 +187,12 @@ h1{font-size:1.4rem;margin:0}
 .menu-body>*{min-width:0}
 .menu-body>.xtra{grid-column:1/-1;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));border-top:1px solid var(--line);padding-top:12px}
 body.menu-open{overflow:hidden}
+.help-box h3{margin:18px 0 6px;font-size:1.1rem}
+.help-box p,.help-box li{max-width:70ch}
+.help-box ol,.help-box ul{margin:6px 0;padding-left:22px}
+.help-box li{margin:4px 0}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+#btnHelp{min-height:44px;padding:0 10px;font-size:.9rem}
 .grid.view-compacto .card h3{order:1;min-width:0}
 .grid.view-compacto .pair{order:2}
 .grid.view-compacto .more-btn{order:3}
@@ -220,6 +226,7 @@ body.menu-open{overflow:hidden}
   <header>
     <h1>Mesa de Áudio</h1>
     <p class="lead sr-only">Seis canais e um Master. Grave, edite, mixe e exporte. Toque duas vezes em “Ajustes e efeitos” de um canal para mexer só naquele canal.</p>
+      <button type="button" class="btn" id="btnHelp" aria-haspopup="dialog">Instruções do aplicativo</button>
   </header>
 
   <section class="transport" aria-label="Reprodução">
@@ -303,6 +310,94 @@ body.menu-open{overflow:hidden}
       <span class="time" id="menuTime" aria-hidden="true"></span>
     </div>
     <div class="menu-body" id="menuBody"></div>
+  </div>
+</div>
+
+<div id="helpLayer" class="menu-layer" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <div class="menu-box help-box">
+    <div class="menu-head">
+      <h2 id="helpTitle" tabindex="-1">Instruções do aplicativo</h2>
+      <button type="button" class="btn primary" id="helpClose">Fechar</button>
+    </div>
+    <p class="hint">Dica para leitor de tela: use a navegação por títulos (NVDA: tecla H; TalkBack: Títulos nos controles de leitura) para pular entre os assuntos.</p>
+
+    <h3>1. Como o aplicativo é organizado</h3>
+    <p>No topo ficam o botão de instruções e o player, com Tocar, Parar, Voltar 5 s, Avançar 5 s, Dizer posição e a barra Posição. Abaixo ficam as listas “Ir para” e “Visualização dos canais”, depois os seis canais e, por último, as seções que abrem e fecham: Arquivos e ajuda, Projetos, Gravação, Metrônomo, Edição, Afinação de voz, Reverb de voz e Master. Abrir uma seção fecha as outras. Em celular deitado, as listas ficam à esquerda, os canais no meio e as seções à direita.</p>
+    <p>A lista “Ir para” leva direto a um canal ou a uma seção. A lista “Visualização dos canais” muda como os canais aparecem. Compacto mostra só volume, mudo, solo e o botão Ajustes e efeitos.</p>
+
+    <h3>2. Carregar um arquivo de áudio</h3>
+    <ol>
+      <li>Em um canal, ative “Ajustes e efeitos”. No modo Lista, Lado a lado ou Um canal por vez, o botão “Carregar áudio” aparece direto no canal.</li>
+      <li>Ative “Carregar áudio” e escolha o arquivo no aparelho. Funcionam WAV, MP3, M4A, AAC, OGG, FLAC e OPUS.</li>
+      <li>O leitor avisa quando o canal foi carregado. O resumo do canal passa a mostrar o nome e a duração.</li>
+      <li>Para carregar vários de uma vez, abra a seção “Arquivos e ajuda” e use “Carregar vários arquivos”: eles vão para os canais 1 a 6, em ordem. O botão de sons de exemplo serve para testar.</li>
+      <li>Para tirar o áudio de um canal, use “Remover áudio”.</li>
+    </ol>
+
+    <h3>3. Tocar e mixar</h3>
+    <ul>
+      <li>Cada canal tem Volume (campo deslizante com botões de menos e mais), Mudo e Solo. O leitor fala o valor em decibéis. Em um campo deslizante, as setas ajustam o valor.</li>
+      <li>Pan, que é esquerda e direita, fica dentro de “Ajustes e efeitos” ou direto no canal nas visualizações completas.</li>
+      <li>A barra Posição leva a qualquer ponto da música. “Dizer posição” fala o tempo atual.</li>
+    </ul>
+
+    <h3>4. Mexer nos efeitos de um canal</h3>
+    <ol>
+      <li>No canal desejado, ative “Ajustes e efeitos”, ou toque duas vezes ou segure em uma parte livre do cartão do canal. Abre uma tela só daquele canal, e o leitor anuncia o nome do canal.</li>
+      <li>Ali ficam Pré-amplificador (ganho e calor), Equalizador (graves, médios e agudos), Delay e Chorus. Abra o grupo que quiser e ajuste. Delay e Chorus têm um botão de ligar.</li>
+      <li>Tudo o que você muda ali vale só para aquele canal.</li>
+      <li>Use “Tocar” dentro da tela para ouvir enquanto ajusta.</li>
+      <li>“Ouvir sem efeitos” compara com o original sem apagar seus ajustes.</li>
+      <li>A lista “Preset de efeitos” aplica ajustes prontos: voz, violão, baixo, bateria, teclado e música completa.</li>
+      <li>“Copiar efeitos deste canal para” leva os mesmos efeitos a outro canal ou a todos. “Restaurar efeitos” zera, e pede para apertar duas vezes.</li>
+      <li>“Canal anterior” e “Próximo canal” trocam de canal sem sair. Para voltar à mesa, ative “Fechar” (ou Esc no teclado).</li>
+    </ol>
+
+    <h3>5. Gravar em um canal</h3>
+    <ol>
+      <li>Use fones de ouvido.</li>
+      <li>Abra a seção Gravação. Em “Canal para gravar”, escolha o canal. O botão passa a dizer “Gravar no Canal” com o número escolhido.</li>
+      <li>Se quiser, ligue o metrônomo na seção Metrônomo e escolha em “Contagem antes de gravar” se quer 3, 2, 1, um compasso ou nada.</li>
+      <li>Ative “Gravar no Canal”, toque ou cante, e ative o mesmo botão para parar. Os outros canais tocam nos fones durante a gravação.</li>
+      <li>A primeira vez, aceite a permissão de microfone do navegador. Se houver mais de um microfone, escolha em “Entrada de áudio”.</li>
+      <li>Se o canal já tinha áudio, a gravação substitui só o trecho gravado, a partir da posição do cursor.</li>
+      <li>Para violão no Canal 1 e voz no Canal 2: grave o violão, depois escolha o Canal 2 e grave a voz ouvindo o violão.</li>
+    </ol>
+
+    <h3>6. Editar: cortar, copiar, colar, silenciar</h3>
+    <ol>
+      <li>Abra a seção Edição e escolha o “Canal a editar”.</li>
+      <li>Toque o canal e use “Marcar início” e “Marcar fim” (ou “Marcar ponto”, que marca primeiro o início e depois o fim) na hora certa. A tecla X faz o mesmo.</li>
+      <li>“Ajustar pontos ao silêncio mais próximo” evita cortes bruscos.</li>
+      <li>Use “Tocar seleção” para conferir. Depois use Cortar, Copiar, Colar no cursor, Silenciar seleção ou Manter só a seleção.</li>
+      <li>Errou? Use Desfazer, ou Refazer. Ctrl+Z e Ctrl+Y funcionam no teclado.</li>
+    </ol>
+
+    <h3>7. Afinação de voz</h3>
+    <p>Na seção Afinação de voz, escolha o canal da voz, a escala, o tom, a velocidade e o trecho, e ative “Afinar a voz”. Ela não diz as notas. Funciona melhor com uma voz sozinha. Ouça o resultado e use Desfazer na seção Edição se não gostar.</p>
+
+    <h3>8. Reverb de voz</h3>
+    <p>Na seção Reverb de voz, escolha o canal da voz, ligue “Reverb de voz ligado” e ajuste o nível. A cadeia tem eco curto, filtros, compressor que abaixa o efeito quando a voz canta, e reverb de salão.</p>
+
+    <h3>9. Master</h3>
+    <p>O Master é a saída final: volume, equalizador, compressor com opções prontas, reverb leve e limitador. “Ouvir sem processamento” compara com e sem o Master. “Dizer nível do Master” fala o nível de saída.</p>
+
+    <h3>10. Salvar, abrir e exportar</h3>
+    <ol>
+      <li>Seção Projetos: digite um nome e ative “Salvar projeto no aparelho”. Ele guarda os áudios e todos os ajustes.</li>
+      <li>Para continuar depois, escolha na lista e ative “Abrir projeto selecionado”. Se houver alterações não salvas, o aplicativo pede para apertar de novo.</li>
+      <li>“Exportar projeto em arquivo” e “Importar projeto de arquivo” levam o projeto para outro aparelho.</li>
+      <li>Para ter a música pronta, use “Exportar mixagem em WAV” ou “Exportar mixagem em MP3” (o MP3 precisa de internet na primeira vez).</li>
+    </ol>
+
+    <h3>11. Atalhos de teclado</h3>
+    <ul>
+      <li>Espaço toca e pausa. Números de 1 a 6 vão ao canal.</li>
+      <li>M e S ligam mudo e solo do canal em foco. X marca ponto de seleção.</li>
+      <li>Esc fecha o menu do canal ou estas instruções.</li>
+    </ul>
+
+    <p><button type="button" class="btn primary" id="helpClose2">Fechar instruções</button></p>
   </div>
 </div>
 
@@ -2146,6 +2241,22 @@ $('menuPlay').addEventListener('click',()=>btnPlay.click());
 new MutationObserver(()=>{$('menuPlay').textContent=btnPlay.textContent}).observe(btnPlay,{childList:true,characterData:true,subtree:true});
 new MutationObserver(()=>{$('menuTime').textContent=tempo.textContent}).observe(tempo,{childList:true,characterData:true,subtree:true});
 
+/* instruções */
+let helpOpen=false;
+const helpLayer=$('helpLayer');
+function openHelp(){
+  helpOpen=true;helpLayer.hidden=false;mainEl.inert=true;document.body.classList.add('menu-open');
+  helpLayer.scrollTop=0;$('helpTitle').focus();say('Instruções do aplicativo. Use Fechar quando terminar.');
+}
+function closeHelp(){
+  if(!helpOpen)return;
+  helpOpen=false;helpLayer.hidden=true;mainEl.inert=false;document.body.classList.remove('menu-open');
+  $('btnHelp').focus();say('Instruções fechadas.');
+}
+$('btnHelp').addEventListener('click',openHelp);
+$('helpClose').addEventListener('click',closeHelp);
+$('helpClose2').addEventListener('click',closeHelp);
+
 /* visualização */
 let view='compacto',one=0;
 const VIEWNAME={lista:'lista completa',lado:'lado a lado',um:'um canal por vez',mesa:'mesa com faders na vertical',compacto:'compacto, só volume, mudo e solo'};
@@ -2190,6 +2301,7 @@ goSel.addEventListener('change',()=>{
 /* teclado */
 document.addEventListener('keydown',e=>{
   const t=e.target,tag=t.tagName;
+  if(e.key==='Escape'&&helpOpen){e.preventDefault();closeHelp();return}
   if(e.key==='Escape'&&menuOpen){e.preventDefault();closeMenu();return}
   const typing=(tag==='SELECT'||tag==='TEXTAREA'||(tag==='INPUT'&&t.type!=='range'));
   if(typing)return;
