@@ -187,6 +187,10 @@ h1{font-size:1.3rem;margin:0}
 .menu-body>*{min-width:0}
 .menu-body>.xtra{grid-column:1/-1;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));border-top:1px solid var(--line);padding-top:12px}
 body.menu-open{overflow:hidden}
+.btn.rec{background:var(--warn);color:var(--warn-fg);border-color:var(--warn);min-width:96px}
+.btn.rec.on{outline:3px solid var(--warn);outline-offset:2px}
+.pair{grid-template-columns:repeat(3,1fr)!important}
+.grid.view-compacto .pair{grid-template-columns:auto auto auto!important}
 .help-box h3{margin:18px 0 6px;font-size:1.1rem}
 .help-box p,.help-box li{max-width:70ch}
 .help-box ol,.help-box ul{margin:6px 0;padding-left:22px}
@@ -231,6 +235,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 
   <section class="transport" aria-label="Reprodução">
     <button type="button" class="btn primary" id="btnPlay">Tocar</button>
+    <button type="button" class="btn rec" id="btnRec" aria-label="Gravar no Canal 1">Gravar</button>
     <button type="button" class="btn" id="btnStop" aria-label="Parar e voltar ao início">Parar</button>
     <button type="button" class="btn" id="btnBack">Voltar 5 s</button>
     <button type="button" class="btn" id="btnFwd">Avançar 5 s</button>
@@ -356,12 +361,12 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
     <h3>5. Gravar em um canal</h3>
     <ol>
       <li>Use fones de ouvido.</li>
-      <li>Abra a seção Gravação. Em “Canal para gravar”, escolha o canal. O botão passa a dizer “Gravar no Canal” com o número escolhido.</li>
+      <li>Em cada canal que vai gravar, ative o botão “Armar”, ao lado de Mudo e Solo. Pode armar um ou vários canais.</li><li>O botão “Gravar” fica no topo, ao lado de Tocar. Ative-o para começar e ative de novo, o mesmo botão agora chamado “Parar gravação”, para terminar. A gravação vai para todos os canais armados, com o mesmo som. Sem nenhum canal armado, ele grava no canal escolhido em “Canal para gravar”, na seção Gravação.</li>
       <li>Se quiser, ligue o metrônomo na seção Metrônomo e escolha em “Contagem antes de gravar” se quer 3, 2, 1, um compasso ou nada.</li>
-      <li>Ative “Gravar no Canal”, toque ou cante, e ative o mesmo botão para parar. Os outros canais tocam nos fones durante a gravação.</li>
+      <li>Toque ou cante. Os canais que não estão sendo gravados tocam nos fones durante a gravação.</li>
       <li>A primeira vez, aceite a permissão de microfone do navegador. Se houver mais de um microfone, escolha em “Entrada de áudio”.</li>
       <li>Se o canal já tinha áudio, a gravação substitui só o trecho gravado, a partir da posição do cursor.</li>
-      <li>Para violão no Canal 1 e voz no Canal 2: grave o violão, depois escolha o Canal 2 e grave a voz ouvindo o violão.</li>
+      <li>Para violão no Canal 1 e voz no Canal 2: arme o Canal 1 e grave o violão; depois desarme o 1, arme o 2 e grave a voz ouvindo o violão.</li>
     </ol>
 
     <h3>6. Editar: cortar, copiar, colar, silenciar</h3>
@@ -824,7 +829,7 @@ const COMP={
 };
 const REV={sala:[.9,3],estudio:[1.8,2.6],igreja:[4.2,2.2]};
 const MT={bpm:100,bar:4,vol:-8,on:false,withPlay:false,auto:false,timer:0,next:0,beat:0};
-const R={state:'idle',cancel:false,chunks:[],stream:null,src:null,node:null,mon:null,zero:null,ch:null,startPos:0,devId:'',monitor:false,lat:0,wl:false};
+const R={state:'idle',cancel:false,chunks:[],stream:null,src:null,node:null,mon:null,zero:null,ch:null,chs:[],startPos:0,devId:'',monitor:false,lat:0,wl:false};
 const sel={a:null,b:null};
 let clip=null;
 let meterEl=null,meterBox=null,cur=0,prev=0,lastRot=0,lastWarn=0;
@@ -964,7 +969,7 @@ let edCur=null;
 function startSources(off,limitEnd){
   chans.forEach(c=>{
     if(!c.buffer||off>=c.buffer.duration)return;
-    if(R.state==='rec'&&c===R.ch)return;
+    if(R.state==='rec'&&R.chs.includes(c))return;
     const s=ctx.createBufferSource();s.buffer=c.buffer;s.connect(live.ch[c.i].pre);
     if(limitEnd!=null)s.start(0,off,Math.max(.001,limitEnd-off));else s.start(0,off);
     c.src=s;
@@ -1069,7 +1074,7 @@ function refreshSum(c){
   if(s.low||s.mid||s.high)f.push('equalizador');
   if(s.dOn)f.push('delay');
   if(s.cOn)f.push('chorus');
-  c.sumEl.textContent=(c.buffer?c.name+(c.edited?' (editado)':'')+', '+sec1(c.buffer.duration)+' s':'Vazio')+'. '+(f.length?'Efeitos: '+f.join(', ')+'.':'Sem efeitos.')+(c.bypass?' Ouvindo sem efeitos.':'');
+  c.sumEl.textContent=(c.buffer?c.name+(c.edited?' (editado)':'')+', '+sec1(c.buffer.duration)+' s':'Vazio')+'. '+(f.length?'Efeitos: '+f.join(', ')+'.':'Sem efeitos.')+(c.armed?' Armado para gravar.':'')+(c.bypass?' Ouvindo sem efeitos.':'');
 }
 function bufFromData(D,sr){
   const b=ctx.createBuffer(D.length,Math.max(1,D[0].length),sr);
@@ -1255,7 +1260,15 @@ function stopMetro(){
 /* ---------- gravação ---------- */
 let recBtn=null,recSelW=null,countW=null,inW=null,monBtn=null,latS=null;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function recLabel(){if(recBtn&&R.state==='idle')recBtn.textContent='Gravar no Canal '+(+recSelW.sel.value+1)}
+function recTargets(){
+  const a=chans.filter(c=>c.armed);
+  return a.length?a:[chans[+recSelW.sel.value]];
+}
+function recLabel(){
+  if(!recBtn||R.state!=='idle')return;
+  const t=recTargets();
+  recBtn.textContent=t.length===1?'Gravar no Canal '+(t[0].i+1):'Gravar nos canais '+t.map(c=>c.i+1).join(', ');
+}
 async function listInputs(){
   try{
     const devs=await navigator.mediaDevices.enumerateDevices();
@@ -1300,7 +1313,7 @@ async function startRecording(){
   ensureCtx();
   if(ctx.state==='suspended')ctx.resume();
   if(playing)pause(false);
-  const c=chans[+recSelW.sel.value];
+  const tg=recTargets(),c=tg[0];
   R.state='count';R.cancel=false;recBtn.textContent='Cancelar';
   let stream;
   try{
@@ -1337,19 +1350,19 @@ async function startRecording(){
     R.src.connect(R.node);R.node.connect(R.zero);R.zero.connect(ctx.destination);
     if(R.monitor){R.mon=ctx.createGain();R.src.connect(R.mon);R.mon.connect(ctx.destination)}
   }catch(e){releaseCapture();R.state='idle';recLabel();say('Não foi possível iniciar a captura de áudio.');return}
-  R.ch=c;R.startPos=offset;R.state='rec';
+  R.ch=c;R.chs=tg;R.startPos=offset;R.state='rec';
   rangeEnd=null;
   startSources(offset);
   startedAt=ctx.currentTime-offset;playing=true;
   recBtn.textContent='Parar gravação';recBtn.classList.add('danger');
   if(MT.withPlay&&!MT.on){MT.auto=true;startMetro()}
   cancelAnimationFrame(raf);tick();
-  say('Gravando no '+c.who);
+  say(tg.length===1?'Gravando no '+c.who:'Gravando nos canais '+tg.map(x=>x.i+1).join(', '));
 }
 function stopRecording(){
   if(R.state==='count'){R.cancel=true;return}
   if(R.state!=='rec')return;
-  const c=R.ch,sr=ctx.sampleRate;
+  const c=R.ch,tg=R.chs.slice(),sr=ctx.sampleRate;
   releaseCapture();
   stopSources();playing=false;btnPlay.textContent='Tocar';afterStop();
   R.state='idle';recBtn.classList.remove('danger');recLabel();
@@ -1359,14 +1372,16 @@ function stopRecording(){
   const lat=Math.round(R.lat/1000*sr);
   if(lat>0)data=data.subarray(Math.min(lat,data.length));
   if(data.length<sr*.2){offset=R.startPos;showTime();say('Gravação muito curta, descartada.');return}
-  const D=pSplice(c.buffer?dataOf(c.buffer):null,Math.round(R.startPos*sr),data,sr);
   const secs=data.length/sr;
-  commit(c,bufFromData(D,sr),'gravação de '+sec1(secs)+' segundos a partir de '+sec1(R.startPos)+' segundos');
-  c.name='Gravação';refreshLabel(c);
+  tg.forEach(t=>{
+    const D=pSplice(t.buffer?dataOf(t.buffer):null,Math.round(R.startPos*sr),data,sr);
+    commit(t,bufFromData(D,sr),'gravação de '+sec1(secs)+' segundos a partir de '+sec1(R.startPos)+' segundos');
+    t.name='Gravação';refreshLabel(t);
+  });
   edSelW.sel.value=String(c.i);
   setSel(R.startPos,R.startPos+secs);
   offset=R.startPos;showTime();
-  say('Gravação concluída no '+c.who+', '+sec1(secs)+' segundos. O trecho gravado ficou selecionado e o cursor voltou ao início dele.');
+  say('Gravação concluída '+(tg.length===1?'no '+c.who:'nos canais '+tg.map(x=>x.i+1).join(', '))+', '+sec1(secs)+' segundos. O trecho gravado ficou selecionado e o cursor voltou ao início dele.');
 }
 
 /* ---------- edição ---------- */
@@ -1561,7 +1576,13 @@ function buildChannel(i){
     c.s.solo=!c.s.solo;solo.setAttribute('aria-pressed',String(c.s.solo));lvGates();
     say(c.s.solo?who+' em solo':who+' solo desativado');
   },'btn',{id:'so'+p,'aria-pressed':'false','aria-label':who+', solo'});
-  c.muteBtn=mute;c.soloBtn=solo;
+  const arm=btn('Armar',()=>{
+    if(R.state!=='idle'){say('Pare a gravação antes de mudar os canais armados.');return}
+    c.armed=!c.armed;arm.setAttribute('aria-pressed',String(c.armed));refreshSum(c);recLabel();
+    const n=chans.filter(x=>x.armed).length;
+    say(who+(c.armed?' armado para gravar':' desarmado')+'. '+(n?n+(n===1?' canal armado.':' canais armados.'):'Nenhum canal armado. O botão Gravar usa o canal da seção Gravação.'));
+  },'btn arm',{'aria-pressed':'false','aria-label':who+', armar para gravar'});
+  c.muteBtn=mute;c.soloBtn=solo;c.armBtn=arm;
 
   const preBox=h('details',{class:'fx'},
     h('summary',{'aria-label':who+', pré-amplificador',text:'Pré-amplificador'}),
@@ -1603,7 +1624,7 @@ function buildChannel(i){
   c.sec=h('section',{class:'card','aria-labelledby':'h'+p,'data-ch':i},
     c.title,c.sumEl,
     filerow,
-    vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo),more,
+    vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo,arm),more,
     preBox,eqBox,dBox,cBox,c.extra);
   c.menuNodes=[filerow,pan.wrap,preBox,eqBox,dBox,cBox,c.extra];
   c.sec.addEventListener('dblclick',e=>{if(e.target.closest('input,button,select,summary,a'))return;openMenu(c.i,more)});
@@ -1619,7 +1640,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
 (function(){
   const sec=$('recSec'),who='Gravação';
   sec.append(h('h2',{id:'h-rec',tabindex:'-1',text:'Gravação'}));
-  sec.append(h('p',{class:'hint',text:'Use fones de ouvido ao gravar sobre outras pistas. Se já houver áudio no canal, a gravação substitui só o trecho gravado, a partir do cursor.'}));
+  sec.append(h('p',{class:'hint',text:'Use fones de ouvido ao gravar sobre outras pistas. Para gravar em um ou mais canais, ative Armar nos canais desejados e use o botão Gravar do topo. Sem nenhum canal armado, grava no canal escolhido abaixo. Se já houver áudio no canal, a gravação substitui só o trecho gravado, a partir do cursor.'}));
   recSelW=selectField('recCh','Canal para gravar',chOpts(),'0',()=>recLabel());
   countW=selectField('recCount','Contagem antes de gravar',[['3','Contar 3, 2, 1'],['compasso','Um compasso do metrônomo'],['nenhuma','Sem contagem']],'3',()=>{});
   inW=selectField('recIn','Entrada de áudio',[['','Entrada padrão']],'',()=>{});
@@ -2159,7 +2180,7 @@ document.addEventListener('input',markDirty);
 document.addEventListener('change',markDirty);
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('button[aria-pressed]');
-  if(b&&!b.hasAttribute('data-view')&&!b.classList.contains('acc-btn'))markDirty(e);
+  if(b&&!b.hasAttribute('data-view')&&!b.classList.contains('acc-btn')&&!b.classList.contains('arm'))markDirty(e);
 });
 window.addEventListener('beforeunload',e=>{if(dirty&&hasAudio()){e.preventDefault();e.returnValue=''}});
 
@@ -2241,6 +2262,15 @@ $('menuPlay').addEventListener('click',()=>btnPlay.click());
 new MutationObserver(()=>{$('menuPlay').textContent=btnPlay.textContent}).observe(btnPlay,{childList:true,characterData:true,subtree:true});
 new MutationObserver(()=>{$('menuTime').textContent=tempo.textContent}).observe(tempo,{childList:true,characterData:true,subtree:true});
 
+/* botão Gravar do topo */
+const btnRec=$('btnRec');
+btnRec.addEventListener('click',()=>{R.state==='idle'?startRecording():stopRecording()});
+new MutationObserver(()=>{
+  btnRec.textContent=R.state==='idle'?'Gravar':R.state==='count'?'Cancelar':'Parar gravação';
+  btnRec.setAttribute('aria-label',recBtn.textContent);
+  btnRec.classList.toggle('on',R.state!=='idle');
+}).observe(recBtn,{childList:true,characterData:true,subtree:true});
+recLabel();
 /* instruções */
 let helpOpen=false;
 const helpLayer=$('helpLayer');
