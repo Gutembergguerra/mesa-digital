@@ -361,12 +361,12 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
     <h3>5. Gravar em um canal</h3>
     <ol>
       <li>Use fones de ouvido.</li>
-      <li>Em cada canal que vai gravar, ative o botão “Armar”, ao lado de Mudo e Solo. Pode armar um ou vários canais.</li><li>O botão “Gravar” fica no topo, ao lado de Tocar. Ative-o para começar e ative de novo, o mesmo botão agora chamado “Parar gravação”, para terminar. A gravação vai para todos os canais armados, com o mesmo som. Sem nenhum canal armado, ele grava no canal escolhido em “Canal para gravar”, na seção Gravação.</li>
+      <li>Em cada canal que vai gravar, ative o botão “Armar”, ao lado de Mudo e Solo. Pode armar um ou vários canais.</li><li>O botão “Gravar” fica no topo, ao lado de Tocar. Ative-o para começar e ative de novo, o mesmo botão agora chamado “Parar gravação”, para terminar. Com uma mesa ou placa de duas entradas, o primeiro canal armado grava a entrada 1 e o segundo grava a entrada 2. Com microfone do celular, o mesmo som vai para todos os canais armados. Isso pode ser mudado em “Vários canais armados”, na seção Gravação. Sem nenhum canal armado, ele grava no canal escolhido em “Canal para gravar”, na seção Gravação.</li>
       <li>Se quiser, ligue o metrônomo na seção Metrônomo e escolha em “Contagem antes de gravar” se quer 3, 2, 1, um compasso ou nada.</li>
       <li>Toque ou cante. Os canais que não estão sendo gravados tocam nos fones durante a gravação.</li>
       <li>A primeira vez, aceite a permissão de microfone do navegador. Se houver mais de um microfone, escolha em “Entrada de áudio”.</li>
       <li>Se o canal já tinha áudio, a gravação substitui só o trecho gravado, a partir da posição do cursor.</li>
-      <li>Para violão no Canal 1 e voz no Canal 2: arme o Canal 1 e grave o violão; depois desarme o 1, arme o 2 e grave a voz ouvindo o violão.</li>
+      <li>Para violão no Canal 1 e voz no Canal 2 ao mesmo tempo, com uma placa de duas entradas, arme os dois canais, ligue o violão na entrada 1 e a voz na entrada 2, e grave. Para gravar um depois do outro: arme o Canal 1 e grave o violão; depois desarme o 1, arme o 2 e grave a voz ouvindo o violão.</li>
     </ol>
 
     <h3>6. Editar: cortar, copiar, colar, silenciar</h3>
@@ -744,7 +744,7 @@ let quiet=false,dirty=false;
 function say(t){if(quiet)return;region.textContent='';setTimeout(()=>{region.textContent=t},40)}
 const $=id=>document.getElementById(id);
 const SL={},SE={},TG={};
-const KEEP_SEL=['mcomp','mrevt','mbar','recCh','recCount','edCh','edStep','tuCh','tuScale','tuKey','tuSpeed','tuRange','mp3q','vrCh','vrPreset'];
+const KEEP_SEL=['recMulti','mcomp','mrevt','mbar','recCh','recCount','edCh','edStep','tuCh','tuScale','tuKey','tuSpeed','tuRange','mp3q','vrCh','vrPreset'];
 
 /* ---------- helpers ---------- */
 function h(tag,props,...kids){
@@ -829,7 +829,7 @@ const COMP={
 };
 const REV={sala:[.9,3],estudio:[1.8,2.6],igreja:[4.2,2.2]};
 const MT={bpm:100,bar:4,vol:-8,on:false,withPlay:false,auto:false,timer:0,next:0,beat:0};
-const R={state:'idle',cancel:false,chunks:[],stream:null,src:null,node:null,mon:null,zero:null,ch:null,chs:[],startPos:0,devId:'',monitor:false,lat:0,wl:false};
+const R={state:'idle',cancel:false,chunks:[],stream:null,src:null,node:null,mon:null,zero:null,ch:null,chs:[],nIn:1,sep:false,startPos:0,devId:'',monitor:false,lat:0,wl:false};
 const sel={a:null,b:null};
 let clip=null;
 let meterEl=null,meterBox=null,cur=0,prev=0,lastRot=0,lastWarn=0;
@@ -1258,7 +1258,7 @@ function stopMetro(){
 }
 
 /* ---------- gravação ---------- */
-let recBtn=null,recSelW=null,countW=null,inW=null,monBtn=null,latS=null;
+let recBtn=null,recSelW=null,countW=null,inW=null,multiW=null,monBtn=null,latS=null;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function recTargets(){
   const a=chans.filter(c=>c.armed);
@@ -1280,7 +1280,7 @@ async function listInputs(){
     s.value=ins.some(d=>d.deviceId===keep)?keep:'';
   }catch(e){}
 }
-const WL_CODE="class P extends AudioWorkletProcessor{process(i){var c=i[0];if(c&&c[0])this.port.postMessage(c[0].slice());return true}}registerProcessor('rec-proc',P);";
+const WL_CODE="class P extends AudioWorkletProcessor{process(i){var c=i[0];if(c&&c[0])this.port.postMessage(c.map(function(x){return x.slice()}));return true}}registerProcessor('rec-proc2',P);";
 async function makeCapture(){
   if(ctx.audioWorklet&&window.AudioWorkletNode){
     try{
@@ -1288,13 +1288,13 @@ async function makeCapture(){
         const url=URL.createObjectURL(new Blob([WL_CODE],{type:'text/javascript'}));
         await ctx.audioWorklet.addModule(url);R.wl=true;
       }
-      const node=new AudioWorkletNode(ctx,'rec-proc',{numberOfInputs:1,numberOfOutputs:1,channelCount:1});
+      const node=new AudioWorkletNode(ctx,'rec-proc2',{numberOfInputs:1,numberOfOutputs:1,channelCount:2,channelCountMode:'explicit',channelInterpretation:'speakers'});
       node.port.onmessage=e=>R.chunks.push(e.data);
       return node;
     }catch(e){}
   }
-  const node=ctx.createScriptProcessor(4096,1,1);
-  node.onaudioprocess=e=>R.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  const node=ctx.createScriptProcessor(4096,2,2);
+  node.onaudioprocess=e=>R.chunks.push([0,1].map(k=>new Float32Array(e.inputBuffer.getChannelData(Math.min(k,e.inputBuffer.numberOfChannels-1)))));
   return node;
 }
 function releaseCapture(){
@@ -1319,7 +1319,7 @@ async function startRecording(){
   try{
     stream=await navigator.mediaDevices.getUserMedia({audio:{
       deviceId:inW.sel.value?{exact:inW.sel.value}:undefined,
-      echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}});
+      echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:{ideal:2}}});
   }catch(e){
     R.state='idle';recLabel();
     say(e&&e.name==='NotAllowedError'
@@ -1328,6 +1328,7 @@ async function startRecording(){
     return;
   }
   R.stream=stream;
+  try{R.nIn=Math.max(1,Math.min(2,(stream.getAudioTracks()[0].getSettings().channelCount)||1))}catch(e){R.nIn=1}
   listInputs();
   const mode=countW.sel.value;
   const beats=mode==='3'?3:mode==='compasso'?MT.bar:0;
@@ -1351,6 +1352,8 @@ async function startRecording(){
     if(R.monitor){R.mon=ctx.createGain();R.src.connect(R.mon);R.mon.connect(ctx.destination)}
   }catch(e){releaseCapture();R.state='idle';recLabel();say('Não foi possível iniciar a captura de áudio.');return}
   R.ch=c;R.chs=tg;R.startPos=offset;R.state='rec';
+  R.sep=multiW.sel.value==='separado'&&R.nIn>1&&tg.length>1;
+  if(tg.length>1&&multiW.sel.value==='separado'&&R.nIn<2)say('Esta entrada tem só um canal. O mesmo som vai para todos os canais armados.');
   rangeEnd=null;
   startSources(offset);
   startedAt=ctx.currentTime-offset;playing=true;
@@ -1366,15 +1369,22 @@ function stopRecording(){
   releaseCapture();
   stopSources();playing=false;btnPlay.textContent='Tocar';afterStop();
   R.state='idle';recBtn.classList.remove('danger');recLabel();
-  let total=0;R.chunks.forEach(x=>{total+=x.length});
-  let data=new Float32Array(total),o=0;
-  R.chunks.forEach(x=>{data.set(x,o);o+=x.length});R.chunks=[];
-  const lat=Math.round(R.lat/1000*sr);
-  if(lat>0)data=data.subarray(Math.min(lat,data.length));
+  const lat=Math.round(R.lat/1000*sr),nIn=Math.max(1,R.nIn||1);
+  const datas=[];
+  for(let k=0;k<nIn;k++){
+    let total=0;R.chunks.forEach(x=>{total+=x[k].length});
+    let d=new Float32Array(total),o=0;
+    R.chunks.forEach(x=>{d.set(x[k],o);o+=x[k].length});
+    if(lat>0)d=d.subarray(Math.min(lat,d.length));
+    datas.push(d);
+  }
+  R.chunks=[];
+  const data=datas[0];
   if(data.length<sr*.2){offset=R.startPos;showTime();say('Gravação muito curta, descartada.');return}
   const secs=data.length/sr;
-  tg.forEach(t=>{
-    const D=pSplice(t.buffer?dataOf(t.buffer):null,Math.round(R.startPos*sr),data,sr);
+  tg.forEach((t,ti)=>{
+    const src=R.sep?datas[Math.min(ti,nIn-1)]:data;
+    const D=pSplice(t.buffer?dataOf(t.buffer):null,Math.round(R.startPos*sr),src,sr);
     commit(t,bufFromData(D,sr),'gravação de '+sec1(secs)+' segundos a partir de '+sec1(R.startPos)+' segundos');
     t.name='Gravação';refreshLabel(t);
   });
@@ -1644,6 +1654,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
   recSelW=selectField('recCh','Canal para gravar',chOpts(),'0',()=>recLabel());
   countW=selectField('recCount','Contagem antes de gravar',[['3','Contar 3, 2, 1'],['compasso','Um compasso do metrônomo'],['nenhuma','Sem contagem']],'3',()=>{});
   inW=selectField('recIn','Entrada de áudio',[['','Entrada padrão']],'',()=>{});
+  multiW=selectField('recMulti','Vários canais armados',[['separado','Entradas separadas: 1º canal armado grava a entrada 1, 2º grava a entrada 2'],['igual','Mesmo som em todos os canais armados']],'separado',()=>{});
   latS=slider({id:'recLat',who,label:'Compensação de atraso',min:0,max:400,step:5,btn:5,value:0,spoken:sMs,short:vMs,onChange:v=>{R.lat=v}});
   const est=btn('Estimar atraso do aparelho',()=>{
     ensureCtx();
@@ -1657,7 +1668,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
   },'btn',{'aria-pressed':'false'});
   recBtn=btn('Gravar no Canal 1',()=>{R.state==='idle'?startRecording():stopRecording()},'btn primary');
   sec.append(h('div',{class:'pgrid'},
-    h('div',{class:'pcol'},recSelW,countW,inW),
+    h('div',{class:'pcol'},recSelW,countW,inW,multiW),
     h('div',{class:'pcol'},latS.wrap,est,monBtn)));
   sec.append(h('div',{class:'row'},recBtn));
 })();
