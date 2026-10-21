@@ -199,6 +199,8 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 #btnHelp,#btnProj{min-height:44px;padding:0 10px;font-size:.9rem}
 .proj-box .panel{margin-top:0}
 header #btnHelp,header #btnProj{flex:1 1 auto}
+header .field{flex:1 1 180px;min-width:0}
+header .field label{font-size:.85rem}
 .grid.view-compacto .card h3{order:1;min-width:0}
 .grid.view-compacto .pair{order:2}
 .grid.view-compacto .more-btn{order:3}
@@ -210,6 +212,8 @@ header #btnHelp,header #btnProj{flex:1 1 auto}
   .wrap{display:flex;flex-direction:column;height:calc(100dvh - 12px)}
   header{display:flex;align-items:baseline;gap:12px}
   header h1{font-size:1.1rem;margin:0}
+  header .field label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  header{flex-wrap:nowrap}
   header .lead,.note{display:none}
   .transport{position:static;margin-block:6px;padding:6px 8px;gap:6px}
   .transport .btn{min-height:44px;padding:0 10px}
@@ -233,6 +237,14 @@ header #btnHelp,header #btnProj{flex:1 1 auto}
     <h1>Mesa de Áudio</h1>
     <p class="lead sr-only">Seis canais e um Master. Grave, edite, mixe e exporte. Toque duas vezes em “Ajustes e efeitos” de um canal para mexer só naquele canal.</p>
       <button type="button" class="btn" id="btnProj" aria-haspopup="dialog">Projetos e arquivos</button>
+    <div class="field"><label for="viewSel">Visualização dos canais</label>
+        <select id="viewSel" data-nav>
+          <option value="compacto">Compacto: volume, mudo e solo</option>
+          <option value="lista">Lista completa</option>
+          <option value="lado">Lado a lado</option>
+          <option value="um">Um canal por vez</option>
+          <option value="mesa">Mesa com faders na vertical</option>
+        </select></div>
     <button type="button" class="btn" id="btnHelp" aria-haspopup="dialog" aria-label="Instruções do aplicativo">Instruções</button>
   </header>
 
@@ -250,14 +262,6 @@ header #btnHelp,header #btnProj{flex:1 1 auto}
   <div class="cols">
     <div class="colL" role="group" aria-label="Navegação">
       <div class="field"><label for="goSel">Ir para</label><select id="goSel" data-nav></select></div>
-      <div class="field"><label for="viewSel">Visualização dos canais</label>
-        <select id="viewSel" data-nav>
-          <option value="compacto">Compacto: volume, mudo e solo</option>
-          <option value="lista">Lista completa</option>
-          <option value="lado">Lado a lado</option>
-          <option value="um">Um canal por vez</option>
-          <option value="mesa">Mesa com faders na vertical</option>
-        </select></div>
     </div>
 
     <div class="colC">
@@ -341,7 +345,7 @@ header #btnHelp,header #btnProj{flex:1 1 auto}
     <p class="hint">Dica para leitor de tela: use a navegação por títulos (NVDA: tecla H; TalkBack: Títulos nos controles de leitura) para pular entre os assuntos.</p>
 
     <h3>1. Como o aplicativo é organizado</h3>
-    <p>No topo ficam o título e dois botões: “Projetos e arquivos” e “Instruções”. Logo abaixo fica o player, que está sempre à vista e tem Tocar, Gravar, Parar, Voltar 5 s, Avançar 5 s, Dizer posição e a barra Posição. Abaixo do player ficam as listas “Ir para” e “Visualização dos canais”, depois os seis canais e, por último, as seções que abrem e fecham: Gravação, Metrônomo, Edição, Afinação de voz, Reverb de voz e Master. Abrir uma seção fecha as outras. Em celular deitado, as listas ficam à esquerda, os canais no meio e as seções à direita.</p>
+    <p>No topo ficam o título, o botão “Projetos e arquivos”, a lista “Visualização dos canais” e o botão “Instruções”. Logo abaixo fica o player, que está sempre à vista e tem Tocar, Gravar, Parar, Voltar 5 s, Avançar 5 s, Dizer posição e a barra Posição. Abaixo do player fica a lista “Ir para”, depois os seis canais e, por último, as seções que abrem e fecham: Gravação, Metrônomo, Edição, Afinação de voz, Reverb de voz e Master. Abrir uma seção fecha as outras. Em celular deitado, a lista Ir para fica à esquerda, os canais no meio e as seções à direita.</p>
     <p>A lista “Ir para” leva direto a um canal ou a uma seção. A lista “Visualização dos canais” muda como os canais aparecem. Compacto mostra só volume, mudo, solo e o botão Ajustes e efeitos.</p>
 
     <h3>2. Carregar um arquivo de áudio</h3>
