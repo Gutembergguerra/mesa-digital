@@ -161,7 +161,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
   .transport .time{margin-left:auto}
 }
 /* faixas */
-.tbar,.fxmenu{display:none}
+.tbar,.fxmenu,.prpane{display:none}
 .grid.view-faixas .card>.fxmenu.pane-show{flex-direction:row;flex-wrap:wrap;gap:6px}
 .grid.view-faixas{grid-template-columns:1fr;gap:8px}
 .grid.view-faixas .tbar{display:flex;flex-wrap:wrap;gap:6px}
@@ -405,16 +405,19 @@ header .field label{font-size:.85rem}
     </ol>
 
     <h3>4b. Visualização Faixas: botões por canal, com setas</h3>
-    <p>Na lista “Visualização dos canais”, escolha “Faixas”. No computador, ela já vem escolhida na primeira vez. Cada canal vira uma linha de botões, nesta ordem: Armar, Volume, Mudo, Solo, Pan, Efeitos, Áudio e Mais.</p>
+    <p>Na lista “Visualização dos canais”, escolha “Faixas”. No computador, ela já vem escolhida na primeira vez. Cada canal vira uma linha de botões, nesta ordem: Armar, Volume, Mudo, Solo, Pan, Efeitos, Presets, Áudio e Mais.</p>
     <ul>
-      <li>Com Tab você entra na linha do canal. Use a seta para a direita e a seta para a esquerda para passar de um botão ao outro. Home vai ao primeiro e End vai ao último.</li>
+      <li>Com Tab você passa por todos os botões da linha do canal. No modo de foco do NVDA, a seta para a direita e a seta para a esquerda também passam de um botão ao outro, e Home e End vão ao primeiro e ao último. Se as setas não funcionarem, aperte NVDA mais Espaço para trocar para o modo de foco, ou use Tab.</li>
       <li>A seta para baixo e a seta para cima levam ao mesmo botão do canal de baixo ou de cima.</li>
       <li>Armar, Mudo e Solo ligam e desligam na hora com Enter ou Espaço.</li>
       <li>Volume, Pan e Áudio abrem as opções daquele item logo abaixo da linha, e o foco vai para elas. Ative o mesmo botão de novo, ou aperte Esc, para voltar à linha. Só um item fica aberto por vez.</li>
+      <li>Presets abre uma lista fechada, com ajustes prontos de efeitos para voz (com eco ou chorus também), violão, guitarra, bateria, baixo, teclado e música completa. Escolha um e ele é aplicado só àquele canal.</li>
       <li>Efeitos abre uma lista de escolha com Pré-amplificador, Equalizador, Delay, Chorus e Reverb. Escolha um e as opções dele aparecem logo abaixo; Esc volta para a lista. Reverb escolhe este canal como o canal da voz e leva à seção Reverb de voz.</li>
       <li>“Mais” abre a tela com presets, copiar efeitos e restaurar. “Áudio” tem carregar e remover áudio do canal.</li>
       <li>No celular, essa visualização também funciona: os botões quebram em mais de uma linha e o TalkBack passa por eles deslizando.</li>
     </ul>
+
+    <p>O gesto de voltar do Android fecha só a tela que estiver aberta, como Ajustes e efeitos, Projetos e arquivos, Instruções ou as opções de um item da faixa, sem sair do aplicativo.</p>
 
     <h3>5. Gravar em um canal</h3>
     <ol>
@@ -1551,7 +1554,7 @@ function doSnap(){
 
 /* ---------- construção da interface ---------- */
 /* faixa: uma linha de botões por canal, navegável com setas */
-const BAR=[['vol','Volume'],['pan','Pan'],['fx','Efeitos'],['file','Áudio']];
+const BAR=[['vol','Volume'],['pan','Pan'],['fx','Efeitos'],['prs','Presets'],['file','Áudio']];
 const FXLIST=[['pre','Pré-amplificador'],['eq','Equalizador'],['dly','Delay'],['cho','Chorus']];
 const FXSET=FXLIST.map(x=>x[0]);
 const paneOpener=k=>FXSET.includes(k)?'fx':k;
@@ -1565,7 +1568,7 @@ function buildBar(c,panes,moreBtn){
   });
   const mais=btn('Mais',()=>openMenu(c.i,mais),'btn tb-open',{'aria-label':who+', mais ajustes: presets, copiar efeitos, restaurar','aria-haspopup':'dialog'});
   c.openers.mais=mais;
-  c.tb.append(c.openers.vol,c.openers.pan,c.openers.fx,c.openers.file,mais);
+  c.tb.append(c.openers.vol,c.openers.pan,c.openers.fx,c.openers.prs,c.openers.file,mais);
   const fm=h('div',{class:'fxmenu',role:'group','aria-label':who+', escolher efeito'});
   c.fxBtns={};
   FXLIST.forEach(([k,label])=>{
@@ -1578,7 +1581,9 @@ function buildBar(c,panes,moreBtn){
   },'btn fxsel',{'aria-label':who+', reverb de voz'}));
   c.panes.fx=fm;c.fxMenu=fm;
   c.tb.addEventListener('keydown',e=>barKey(c,e));
-  c.sec.querySelector('h3').after(c.tb);c.tb.after(fm);
+  const prp=h('div',{class:'prpane'},mkPresetField(c,'prp'+c.i));
+  c.panes.prs=prp;
+  c.sec.querySelector('h3').after(c.tb);c.tb.after(fm);fm.after(prp);
   c.sec.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&view==='faixas'&&c.pane&&!menuOpen&&!e.target.closest('.tbar')){
       e.preventDefault();e.stopPropagation();c.openers[paneOpener(c.pane)].focus();
@@ -1586,9 +1591,7 @@ function buildBar(c,panes,moreBtn){
   });
 }
 function barItems(c){return Array.from(c.tb.querySelectorAll('button'))}
-function barRove(c,idx){
-  const it=barItems(c);it.forEach((b,i)=>b.setAttribute('tabindex',i===idx?'0':'-1'));
-}
+function barRove(){}
 function barKey(c,e){
   const it=barItems(c),i=it.indexOf(document.activeElement);if(i<0)return;
   let n=-1;
@@ -1625,6 +1628,10 @@ function showPane(c,k,silent){
   Object.keys(c.fxBtns).forEach(x=>c.fxBtns[x].setAttribute('aria-pressed',String(x===k)));
   c.pane=k;
   if(k&&c.panes[k].tagName==='DETAILS')c.panes[k].open=true;
+  if(k){
+    if(!paneLayer){paneLayer=true;pushLayer('pane',closePaneByBack)}
+    paneOwner=c;
+  }else if(c===paneOwner&&paneLayer){paneLayer=false;paneOwner=null;dropLayer('pane')}
 }
 function focusPane(c,k){
   const f=c.panes[k].querySelector('input[type=range]')||c.panes[k].querySelector('button,select');
@@ -1645,20 +1652,48 @@ function selectFx(c,k){
 }
 const FXDEF={pre:0,heat:0,low:0,mid:0,high:0,dTime:300,dFb:35,dMix:30,cRate:.8,cDepth:50,cMix:40};
 const FXID={pre:'pg',heat:'ph',low:'el',mid:'em',high:'eh',dTime:'dt',dFb:'df',dMix:'dm',cRate:'cr',cDepth:'cd',cMix:'cm'};
+const DLY=(t,f,m)=>({dOn:true,dTime:t,dFb:f,dMix:m,cOn:false});
+const CHO=(r,d,m)=>({cOn:true,cRate:r,cDepth:d,cMix:m,dOn:false});
 const FXPRESET={
   voz:{pre:3,heat:10,low:-2,mid:2,high:3,dOn:false,cOn:false},
+  vozgrave:{pre:2,heat:10,low:1,mid:2,high:2,dOn:false,cOn:false},
+  vozaguda:{pre:2,heat:10,low:-4,mid:1,high:2,dOn:false,cOn:false},
+  vozeco:Object.assign({pre:3,heat:10,low:-2,mid:2,high:3},DLY(120,20,20)),
+  vozeco2:Object.assign({pre:3,heat:10,low:-2,mid:2,high:3},DLY(380,40,28)),
+  vozchorus:Object.assign({pre:3,heat:10,low:-2,mid:2,high:3},CHO(.6,35,30)),
   violao:{pre:0,heat:0,low:2,mid:-1,high:2,dOn:false,cOn:false},
+  violaochorus:Object.assign({pre:0,heat:0,low:2,mid:-1,high:2},CHO(.7,40,35)),
+  violaoeco:Object.assign({pre:0,heat:0,low:2,mid:-1,high:2},DLY(250,25,18)),
+  guitarra:Object.assign({pre:4,heat:35,low:1,mid:2,high:1},DLY(300,30,18)),
+  bateria:{pre:0,heat:10,low:2,mid:-2,high:3,dOn:false,cOn:false},
+  bateriapunch:{pre:0,heat:25,low:3,mid:-3,high:4,dOn:false,cOn:false},
+  baixo:{pre:0,heat:15,low:3,mid:-1,high:-2,dOn:false,cOn:false},
+  teclado:{pre:0,heat:0,low:0,mid:1,high:1,dOn:false,cOn:false},
   musica:{pre:0,heat:0,low:1,mid:0,high:1,dOn:false,cOn:false},
   musicabrilho:{pre:0,heat:0,low:0,mid:-1,high:3,dOn:false,cOn:false},
   musicagraves:{pre:0,heat:0,low:3,mid:-1,high:1,dOn:false,cOn:false},
   musicasuave:{pre:0,heat:0,low:-1,mid:0,high:-2,dOn:false,cOn:false},
-  vozgrave:{pre:2,heat:10,low:1,mid:2,high:2,dOn:false,cOn:false},
-  vozaguda:{pre:2,heat:10,low:-4,mid:1,high:2,dOn:false,cOn:false},
-  baixo:{pre:0,heat:15,low:3,mid:-1,high:-2,dOn:false,cOn:false},
-  bateria:{pre:0,heat:10,low:2,mid:-2,high:3,dOn:false,cOn:false},
-  teclado:{pre:0,heat:0,low:0,mid:1,high:1,dOn:false,cOn:false},
   limpo:Object.assign({},FXDEF,{dOn:false,cOn:false})
 };
+const PRGROUPS=[
+  ['Voz',[['voz','Voz: realce de médios e agudos'],['vozgrave','Voz grave: corpo e presença'],['vozaguda','Voz aguda: menos grave, mais presença'],['vozeco','Voz com eco curto'],['vozeco2','Voz com eco longo'],['vozchorus','Voz com chorus suave']]],
+  ['Violão e guitarra',[['violao','Violão: graves leves e brilho'],['violaochorus','Violão com chorus'],['violaoeco','Violão com eco leve'],['guitarra','Guitarra: calor e eco leve']]],
+  ['Bateria, baixo e teclado',[['bateria','Bateria: graves e ataque'],['bateriapunch','Bateria com punch e calor'],['baixo','Baixo: graves firmes'],['teclado','Teclado ou piano: leve presença']]],
+  ['Música completa',[['musica','Equilibrada'],['musicabrilho','Mais brilho'],['musicagraves','Mais graves'],['musicasuave','Suave, menos agudos']]],
+  ['Outros',[['limpo','Limpo: zera todos os efeitos']]]
+];
+function mkPresetField(c,id){
+  const w=h('div',{class:'field'},h('label',{for:id,text:'Preset de efeitos do '+c.who}));
+  const pr=h('select',{id},h('option',{value:'',text:'Escolher preset…'}));
+  PRGROUPS.forEach(([g,list])=>{
+    const og=h('optgroup',{label:g});list.forEach(([v,t])=>og.append(h('option',{value:v,text:t})));pr.append(og);
+  });
+  pr.addEventListener('change',()=>{
+    const v=pr.value,txt=pr.options[pr.selectedIndex].text;pr.value='';
+    if(!v)return;setFx(c,FXPRESET[v]);say(c.who+': preset aplicado, '+txt);
+  });
+  w.append(pr);return w;
+}
 function setFx(c,vals){
   Object.keys(FXID).forEach(k=>{if(vals[k]!=null)SL[FXID[k]+'c'+c.i](vals[k],false)});
   [['dOn','do'],['cOn','co']].forEach(([k,id])=>{
@@ -1673,26 +1708,7 @@ function buildExtras(c){
     c.bypass=!c.bypass;bp.setAttribute('aria-pressed',String(c.bypass));lvCh(c);
     say(who+(c.bypass?': ouvindo sem efeitos. Seus ajustes continuam guardados.':': efeitos de volta.'));
   },'btn',{'aria-pressed':'false','aria-label':who+', ouvir sem efeitos'});
-  const prW=h('div',{class:'field'},h('label',{for:'pr'+p,text:'Preset de efeitos deste canal'}));
-  const pr=h('select',{id:'pr'+p},
-    h('option',{value:'',text:'Escolher preset…'}),
-    h('option',{value:'voz',text:'Voz: realce de médios e agudos'}),
-    h('option',{value:'violao',text:'Violão: graves leves e brilho'}),
-    h('option',{value:'vozgrave',text:'Voz grave: corpo e presença'}),
-    h('option',{value:'vozaguda',text:'Voz aguda: menos grave, mais presença'}),
-    h('option',{value:'baixo',text:'Baixo: graves firmes'}),
-    h('option',{value:'bateria',text:'Bateria: graves e ataque'}),
-    h('option',{value:'teclado',text:'Teclado ou piano: leve presença'}),
-    h('option',{value:'musica',text:'Música completa: equilibrada'}),
-    h('option',{value:'musicabrilho',text:'Música completa: mais brilho'}),
-    h('option',{value:'musicagraves',text:'Música completa: mais graves'}),
-    h('option',{value:'musicasuave',text:'Música completa: suave, menos agudos'}),
-    h('option',{value:'limpo',text:'Limpo: zera todos os efeitos'}));
-  pr.addEventListener('change',()=>{
-    const v=pr.value,txt=pr.options[pr.selectedIndex].text;pr.value='';
-    if(!v)return;setFx(c,FXPRESET[v]);say(who+': preset aplicado, '+txt);
-  });
-  prW.append(pr);
+  const prW=mkPresetField(c,'pr'+p);
   const cpW=h('div',{class:'field'},h('label',{for:'cp'+p,text:'Copiar efeitos deste canal para'}));
   const cp=h('select',{id:'cp'+p},h('option',{value:'',text:'Escolher canal…'}));
   chansPlan.forEach(k=>{if(k!==c.i)cp.append(h('option',{value:String(k),text:'Canal '+(k+1)}))});
@@ -1820,6 +1836,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     say(R.monitor?'Monitor da entrada ligado. Use fones para não dar microfonia.':'Monitor da entrada desligado.');
   },'btn',{'aria-pressed':'false'});
   recBtn=btn('Gravar no Canal 1',()=>{R.state==='idle'?startRecording():stopRecording()},'btn primary');
+  recBtn.hidden=true;
   sec.append(h('div',{class:'pgrid'},
     h('div',{class:'pcol'},recSelW,countW,inW,multiW),
     h('div',{class:'pcol'},latS.wrap,est,monBtn)));
@@ -2380,6 +2397,22 @@ function goSection(id){
 }
 
 /* menu do canal */
+/* gesto de voltar do Android fecha só a camada aberta */
+const layers=[];let skipPop=0,paneOwner=null,paneLayer=false;
+function pushLayer(id,fn){layers.push({id,fn});try{history.pushState({mesa:id},'')}catch(e){}}
+function dropLayer(id){
+  const i=layers.findIndex(l=>l.id===id);if(i<0)return;
+  const top=i===layers.length-1;layers.splice(i,1);
+  if(top){skipPop++;try{history.back()}catch(e){skipPop--}}
+}
+window.addEventListener('popstate',()=>{
+  if(skipPop>0){skipPop--;return}
+  const l=layers.pop();if(l)l.fn();
+});
+function closePaneByBack(){
+  const o=paneOwner,k=o&&o.pane;paneLayer=false;paneOwner=null;
+  if(o){showPane(o,null,true);if(k&&o.openers[paneOpener(k)]&&o.sec.offsetParent!==null)o.openers[paneOpener(k)].focus()}
+}
 let menuOpen=false,menuCh=0,menuOpener=null;
 const menuLayer=$('menuLayer'),menuBody=$('menuBody'),menuTitle=$('menuTitle'),mainEl=$('main');
 function menuRestore(){
@@ -2396,7 +2429,7 @@ function menuFill(k){
 }
 function openMenu(k,opener){
   if(menuOpen)return;
-  menuOpener=opener||null;menuOpen=true;
+  menuOpener=opener||null;menuOpen=true;pushLayer('menu',()=>closeMenu());
   const was=quiet;quiet=true;menuFill(k);quiet=was;
   menuLayer.hidden=false;mainEl.inert=true;document.body.classList.add('menu-open');
   menuLayer.scrollTop=0;menuTitle.focus();
@@ -2411,6 +2444,7 @@ function menuShow(k){
 }
 function closeMenu(noFocus){
   if(!menuOpen)return;
+  dropLayer('menu');
   const k=menuCh;menuRestore();
   menuOpen=false;menuLayer.hidden=true;mainEl.inert=false;document.body.classList.remove('menu-open');
   const o=chans[k].moreBtn;
@@ -2450,13 +2484,14 @@ let projOpen=false;
 const projLayer=$('projLayer'),projBody=$('projBody'),colR=$('colR');
 function openProj(){
   if(projOpen)return;
-  projOpen=true;
+  projOpen=true;pushLayer('proj',()=>closeProj());
   [$('fileSec'),$('projSec')].forEach(x=>{x.hidden=false;projBody.append(x)});
   projLayer.hidden=false;mainEl.inert=true;document.body.classList.add('menu-open');
   projLayer.scrollTop=0;$('projTitle').focus();say('Projetos e arquivos. Use Fechar quando terminar.');
 }
 function closeProj(){
   if(!projOpen)return;
+  dropLayer('proj');
   projOpen=false;
   [$('projSec'),$('fileSec')].forEach(x=>{x.hidden=true;colR.prepend(x)});
   projLayer.hidden=true;mainEl.inert=false;document.body.classList.remove('menu-open');
@@ -2468,11 +2503,12 @@ $('projClose').addEventListener('click',closeProj);
 let helpOpen=false;
 const helpLayer=$('helpLayer');
 function openHelp(){
-  helpOpen=true;helpLayer.hidden=false;mainEl.inert=true;document.body.classList.add('menu-open');
+  helpOpen=true;pushLayer('help',()=>closeHelp());helpLayer.hidden=false;mainEl.inert=true;document.body.classList.add('menu-open');
   helpLayer.scrollTop=0;$('helpTitle').focus();say('Instruções do aplicativo. Use Fechar quando terminar.');
 }
 function closeHelp(){
   if(!helpOpen)return;
+  dropLayer('help');
   helpOpen=false;helpLayer.hidden=true;mainEl.inert=false;document.body.classList.remove('menu-open');
   $('btnHelp').focus();say('Instruções fechadas.');
 }

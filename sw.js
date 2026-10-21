@@ -1,4 +1,4 @@
-const CACHE = 'mesa-audio-v17';
+const CACHE = 'mesa-audio-v18';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 const LAME = 'https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';
 
