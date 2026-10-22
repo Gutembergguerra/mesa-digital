@@ -7,10 +7,10 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<!-- Mesa de Áudio. © 2026 Gutemberg Guerra. Todos os direitos reservados. -->
-<title>Mesa de Áudio</title>
-<meta name="author" content="Gutemberg Guerra">
-<meta name="copyright" content="© 2026 Gutemberg Guerra. Todos os direitos reservados.">
+<!-- SL-Mix: Áudio Acessível. © 2026 Gutenberg Guerra Lima. Todos os direitos reservados. -->
+<title>SL-Mix: Áudio Acessível</title>
+<meta name="author" content="Gutenberg Guerra Lima">
+<meta name="copyright" content="© 2026 Gutenberg Guerra Lima. Todos os direitos reservados.">
 <style>
 /* Layout: cabeçalho, atalhos de seção, barra de reprodução, painéis (gravação, metrônomo, edição),
    grade de 6 canais e painel Master. Controles nativos para NVDA e TalkBack. */
@@ -264,7 +264,7 @@ header .field label{font-size:.85rem}
 <body>
 <div class="wrap" id="main">
   <header>
-    <h1>Mesa de Áudio</h1>
+    <h1>SL-Mix</h1>
       <button type="button" class="btn" id="btnProj" aria-haspopup="dialog">Projetos e arquivos</button>
     <div class="field"><label for="viewSel">Visualização dos canais</label>
         <select id="viewSel" data-nav>
@@ -371,6 +371,22 @@ header .field label{font-size:.85rem}
       <h2 id="helpTitle" tabindex="-1">Instruções do aplicativo</h2>
       <button type="button" class="btn primary" id="helpClose">Fechar</button>
     </div>
+    <h3>Sobre o SL-Mix</h3>
+    <p>O SL-Mix é o aplicativo ideal para os amantes da produção de áudio, desenvolvido para atender tanto profissionais quanto entusiastas do som.</p>
+    <p>Com uma interface simples, intuitiva e muito fácil de usar, o aplicativo oferece um console prático e eficiente para criação de vinhetas, comerciais, gravações de músicas, edições e muito mais.</p>
+
+    <h3>Acessibilidade em Primeiro Lugar</h3>
+    <p>Pensado para facilitar o dia a dia da comunidade, o SL-Mix foi especialmente desenvolvido com foco total em acessibilidade. Ele conta com suporte otimizado para leitores de tela como TalkBack e NVDA, permitindo que pessoas com deficiência visual naveguem e produzam seus projetos com total autonomia e precisão.</p>
+
+    <h3>Destaques do SL-Mix</h3>
+    <ul>
+      <li><strong>Interface Simples e Prática:</strong> Ideal para criar e editar sem complicações.</li>
+      <li><strong>100% Acessível:</strong> Excelente navegação e resposta para usuários de leitor de tela (TalkBack e NVDA).</li>
+      <li><strong>Versátil:</strong> Perfeito para a criação de vinhetas comerciais, gravações musicais e produções em geral.</li>
+      <li><strong>Para Todos:</strong> Feito sob medida para produtores amadores, profissionais e iniciantes.</li>
+    </ul>
+    <p>Idealizado e Desenvolvido por: Gutenberg Guerra Lima</p>
+
     <p class="hint">Dica para leitor de tela: use a navegação por títulos (NVDA: tecla H; TalkBack: Títulos nos controles de leitura) para pular entre os assuntos.</p>
 
     <h3>1. Como o aplicativo é organizado</h3>
@@ -463,7 +479,9 @@ header .field label{font-size:.85rem}
       <li>Esc fecha o menu do canal, Projetos e arquivos, ou estas instruções.</li>
     </ul>
 
-    <p class="hint">Mesa de Áudio. © 2026 Gutemberg Guerra. Todos os direitos reservados.</p>
+    <h3>Novidades</h3>
+    <p>Versão 1.0: primeira versão publicada, com seis canais e Master, gravação em um ou vários canais, efeitos e presets por canal, edição, afinação de voz, reverb de voz, projetos e exportação em WAV e MP3.</p>
+    <p class="hint">SL-Mix: Áudio Acessível. Versão 1.0. © 2026 Gutenberg Guerra Lima. Todos os direitos reservados.</p>
     <p><button type="button" class="btn primary" id="helpClose2">Fechar instruções</button></p>
   </div>
 </div>
@@ -2331,7 +2349,7 @@ function exportFile(){
 async function importFile(file){
   try{
     const p=unpackProject(await file.arrayBuffer());
-    if(!p||!Array.isArray(p.chs)||p.chs.length!==N){say('Este arquivo não é um projeto da Mesa de Áudio.');return}
+    if(!p||!Array.isArray(p.chs)||p.chs.length!==N){say('Este arquivo não é um projeto do SL-Mix.');return}
     say('Importando o projeto. Aguarde.');
     await applyProject(p.meta||{},p.chs);
     curProject='';nameInp.value=(p.meta&&p.meta.name)||'';dirty=false;

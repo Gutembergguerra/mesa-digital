@@ -1,4 +1,4 @@
-const CACHE = 'mesa-audio-v20';
+const CACHE = 'sl-mix-v21';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 const LAME = 'https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';
 
@@ -19,6 +19,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = e.request.url;
+  if (url.indexOf('/teste-') !== -1) return; // a cópia de teste tem o próprio cache
   const mesmoSite = new URL(url).origin === self.location.origin;
   if (!mesmoSite && url !== LAME) return;
   e.respondWith(

@@ -1,6 +1,6 @@
-# Mesa de Áudio: notas do projeto
+# SL-Mix: Áudio Acessível. Notas do projeto
 
-Aplicativo web (PWA) de mesa de áudio com 6 canais e Master, feito para funcionar bem com leitor de tela (NVDA no Windows, TalkBack no Android). Autor: Gutemberg Guerra. Todos os direitos reservados.
+Aplicativo web (PWA) de mesa de áudio com 6 canais e Master, feito para funcionar bem com leitor de tela (NVDA no Windows, TalkBack no Android). Autor: Gutenberg Guerra Lima. Todos os direitos reservados.
 
 ## Arquivos
 - `index.html`: o app inteiro (HTML, CSS e JavaScript num arquivo só).
@@ -31,3 +31,15 @@ Volume, pan, mudo, solo e armar por canal. Efeitos por canal (pré-amplificador,
 - Respostas curtas e claras, passo a passo quando for explicar. Sem termos em inglês ou técnicos demais.
 - Usa a versão gratuita do Claude: juntar vários pedidos numa mudança só, evitar trabalho repetido.
 - Avisar sempre que um aplicativo instalado só pega a versão nova ao fechar e abrir de novo.
+
+## Versões
+- Versão atual: 1.0. Número e "Novidades" ficam no fim das Instruções do aplicativo (em index.html).
+- Plano: o app oficial (raiz do site) muda só no lançamento mensal. As novidades são testadas antes em uma cópia de teste, em uma pasta com nome reservado do mesmo site, que se instala como "SL-Mix Teste". A cópia tem seu próprio sw.js e cache. Ao lançar, copiar o index.html aprovado para a raiz, subir o número da versão, atualizar "Novidades" e marcar a release.
+- O endereço do app oficial deve ser trocado para o nome sl-mix (renomear o repositório). Quem usava o link antigo precisa instalar de novo, e projetos devem ser exportados antes.
+
+## Texto de abertura (também no começo das Instruções e para o APK)
+O SL-Mix é o aplicativo ideal para os amantes da produção de áudio, desenvolvido para atender tanto profissionais quanto entusiastas do som.
+Com uma interface simples, intuitiva e muito fácil de usar, o aplicativo oferece um console prático e eficiente para criação de vinhetas, comerciais, gravações de músicas, edições e muito mais.
+Acessibilidade em Primeiro Lugar: pensado para facilitar o dia a dia da comunidade, o SL-Mix foi especialmente desenvolvido com foco total em acessibilidade, com suporte otimizado para TalkBack e NVDA, permitindo que pessoas com deficiência visual naveguem e produzam seus projetos com total autonomia e precisão.
+Destaques: Interface Simples e Prática; 100% Acessível; Versátil; Para Todos.
+Idealizado e Desenvolvido por: Gutenberg Guerra Lima
