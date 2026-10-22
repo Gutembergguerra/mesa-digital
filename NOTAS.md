@@ -17,3 +17,17 @@ Volume, pan, mudo, solo e armar por canal. Efeitos por canal (pré-amplificador,
 - Qualquer mudança no app deve atualizar o tutorial "Instruções do aplicativo".
 - Um código só para computador e celular.
 - Testar com Playwright em celular em pé, deitado e computador.
+
+## Preferências do autor (valem para qualquer conversa nova)
+- O autor usa leitor de tela (NVDA e TalkBack) e fala as mensagens por voz, então pode haver erros de digitação. Entenda pelo contexto.
+- O que o leitor de tela fala é mais importante do que o que aparece na tela. Nomes de botões claros e curtos, valores falados em português.
+- Tela limpa: sem textos de apoio ou frases explicativas soltas. As explicações ficam em "Instruções do aplicativo".
+- Pouca rolagem. Opções que não são usadas o tempo todo ficam dentro de um menu fechado (lista, tela própria com botão Fechar), não soltas na tela.
+- O botão Gravar fica sempre à vista, no topo, e o foco do leitor fica nele ao gravar e parar. O mesmo vale para o Tocar.
+- O gesto de voltar do Android deve fechar só a tela aberta, sem sair do app.
+- Botões em ordem lógica, mesma ordem visual e de leitura. Botões relacionados juntos (Voltar e Avançar).
+- Presets e escolhas em lista fechada, não em muitos botões.
+- Efeitos são por canal. O reverb de voz vale para um canal só de cada vez.
+- Respostas curtas e claras, passo a passo quando for explicar. Sem termos em inglês ou técnicos demais.
+- Usa a versão gratuita do Claude: juntar vários pedidos numa mudança só, evitar trabalho repetido.
+- Avisar sempre que um aplicativo instalado só pega a versão nova ao fechar e abrir de novo.
