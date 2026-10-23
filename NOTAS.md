@@ -53,3 +53,22 @@ Idealizado e Desenvolvido por: Gutenberg Guerra Lima
 6. Idiomas: primeiro extrair todos os textos do código para listas de tradução, depois inglês, depois espanhol e outros. Informar o idioma ao leitor de tela.
 7. Programa separado para Windows para aplicar plugins VST3 (biblioteca pedalboard, em Python), processando arquivos e exportando WAV, com controles acessíveis a partir dos parâmetros do plugin. Só se o autor pedir.
 8. Lançamento mensal: as novidades são testadas na cópia de teste (SL-Mix Teste) e passam para o app oficial uma vez por mês, com número de versão e "Novidades" nas Instruções.
+
+## Ideias de atualizações (banco de ideias, não programadas)
+Para mostrar movimento aos clientes: tela "Novidades" na primeira abertura após cada atualização; botão "Enviar sugestão" que abre o e-mail do projeto; lista "Em breve" nas Instruções.
+
+Dia a dia: renomear canais (o leitor fala o nome); salvar automático; compartilhar a mixagem pelo Android; duplicar canal e copiar trecho entre canais; mais de seis canais (8 ou 12).
+
+Edição: fade de entrada e de saída; normalizar volume; repetir trecho (loop); marcadores com nome falados; dividir e mover trechos; mudar a velocidade sem mudar o tom; cortar silêncios automaticamente.
+
+Efeitos: compressor e gate por canal; de-esser; limpeza de ruído da voz; reverb por canal com nível próprio; ducking automático da trilha quando a voz fala.
+
+Vinhetas e comerciais: modelos de projeto (vinheta, comercial de 30 s, podcast); biblioteca de efeitos sonoros livres de direitos; medidor e ajuste de loudness para rádio e podcast, com o nível falado.
+
+Gravação: medidor falado antes de gravar ("sinal bom", "alto demais"); regravar só um trecho (punch in); pré-roll.
+
+Arquivos: exportar cada canal separado; formatos M4A, FLAC e OGG.
+
+Acessibilidade: sons curtos de confirmação opcionais; atalhos de teclado personalizáveis; aviso falado contínuo do nível de um canal.
+
+Calendário sugerido: 1.1 Novidades, renomear canais, salvar automático, fade e normalizar. 1.2 compressor e gate por canal, exportar canais separados, compartilhar. 1.3 marcadores falados, loudness, modelos de projeto. Depois: linha do tempo, vídeo e idiomas.
