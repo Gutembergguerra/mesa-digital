@@ -43,3 +43,13 @@ Com uma interface simples, intuitiva e muito fácil de usar, o aplicativo oferec
 Acessibilidade em Primeiro Lugar: pensado para facilitar o dia a dia da comunidade, o SL-Mix foi especialmente desenvolvido com foco total em acessibilidade, com suporte otimizado para TalkBack e NVDA, permitindo que pessoas com deficiência visual naveguem e produzam seus projetos com total autonomia e precisão.
 Destaques: Interface Simples e Prática; 100% Acessível; Versátil; Para Todos.
 Idealizado e Desenvolvido por: Gutenberg Guerra Lima
+
+## Planos futuros (conversados, nada disso foi programado ainda)
+1. Publicar na Play Store: empacotar a versão oficial como APK. Preferência: arquivos dentro do APK (funciona sem internet e permite repositório privado) ou TWA. Precisa de conta de desenvolvedor, e-mail do projeto, política de privacidade e termos de uso.
+2. Tela de termos de uso e licença na primeira abertura, com aceite; reaparece quando os termos mudam. Usar o texto de abertura acima na descrição da loja.
+3. Monetização por assinatura da Play Store (mensal, 3 meses, 6 meses e anual; também considerar plano pré-pago), com teste grátis de 7 dias. O básico (mixar, cortar, emendar, ouvir) pode ficar livre. Valores ainda a decidir. O app deve continuar funcionando para quem já o tem se o autor parar de atualizar; avisar antes de descontinuar.
+4. Linha do tempo com as ondas dos áudios, para quem enxerga, como uma visualização a mais. Só entra se for acessível ao leitor de tela, com descrição falada de cada trecho.
+5. Edição de vídeo, em etapas (versão 2.0): primeiro importar vídeo, mixar o áudio na mesa e exportar o vídeo com o novo áudio.
+6. Idiomas: primeiro extrair todos os textos do código para listas de tradução, depois inglês, depois espanhol e outros. Informar o idioma ao leitor de tela.
+7. Programa separado para Windows para aplicar plugins VST3 (biblioteca pedalboard, em Python), processando arquivos e exportando WAV, com controles acessíveis a partir dos parâmetros do plugin. Só se o autor pedir.
+8. Lançamento mensal: as novidades são testadas na cópia de teste (SL-Mix Teste) e passam para o app oficial uma vez por mês, com número de versão e "Novidades" nas Instruções.
