@@ -1986,7 +1986,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
   });
   inA=wA.inp;inB=wB.inp;
   const posText=t=>spokenPos(t)+', de '+spokenDur(dur())+' no total';
-  const edPos=h('input',{type:'range',id:'edPos','data-nav':'',min:0,max:0,step:10,value:0,disabled:true,'aria-label':'Posição do cursor, setas movem 10 milissegundos'});
+  const edPos=h('input',{type:'range',id:'edPos','data-nav':'',min:0,max:0,step:10,value:0,disabled:true,'aria-label':'Posição do cursor'});
   edPosUp=()=>{
     const d=dur();edPos.disabled=!d;edPos.max=String(Math.round(d*1000));
     if(document.activeElement!==edPos)edPos.value=String(Math.round(pos()*1000));
@@ -2219,6 +2219,17 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     h('div',{class:'row'},btn('Emendar',doJoin,'btn primary'),btn('Desfazer a emenda',()=>undo(chans[+emTo.sel.value]),'btn quiet')));
 
   sec.append(h('div',{class:'pgrid'},col1,col2,col3),dvBlock,emBlock);
+  /* o rótulo visível fica escondido do leitor: o nome completo é falado só dentro do campo */
+  const QN={edCh:'Canal a editar',edStep:'Tamanho do passo do cursor',edA:'Início da seleção, em minutos, segundos e milésimos',edB:'Fim da seleção, em minutos, segundos e milésimos',edPos:'Posição do cursor, as setas movem 10 milissegundos',dvMode:'Como dividir',dvList:'Partes da lista',dvName:'Nome da parte selecionada',dvTo:'Colocar a parte em',emFrom:'Juntar o áudio do canal',emTo:'No final do canal'};
+  Object.keys(QN).forEach(id=>{
+    const el=$(id),lb=sec.querySelector('label[for="'+id+'"]');
+    if(el)el.setAttribute('aria-label',QN[id]);
+    if(lb)lb.setAttribute('aria-hidden','true');
+  });
+  const dvArgLab=dvArgW.lab,dvArgIn=dvArgW.inp;
+  dvArgLab.setAttribute('aria-hidden','true');
+  const dvArgName=()=>dvArgIn.setAttribute('aria-label',dvArgLab.textContent);
+  dvArgName();dvMode.sel.addEventListener('change',dvArgName);
 })();
 
 /* painel Master */
