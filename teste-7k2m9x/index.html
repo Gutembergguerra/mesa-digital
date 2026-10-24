@@ -471,12 +471,12 @@ header .field label{font-size:.85rem}
     <h3>6b. Dividir áudio</h3>
     <ol>
       <li>Na seção Edição, escolha o canal e vá até “Dividir áudio”.</li>
-      <li>Em “Como dividir”, escolha: em um ponto (no cursor), pela seleção marcada, por tempo, em partes iguais ou por silêncio. Preencha o número pedido, se houver, e ative “Adicionar partes à lista”. O áudio do canal não muda.</li>
-      <li>Em “Partes da lista”, escolha uma parte. Use “Ouvir parte”, dê um nome em “Nome da parte selecionada” e ative “Aplicar nome”.</li>
-      <li>Em “Usar as partes”, escolha o canal (ou Novo canal) e ative “Colocar parte no canal”, para substituir ou emendar no final. Ou use “Exportar parte em WAV” e “Exportar todas as partes em ZIP”.</li>
+      <li>Em “Dividir”, escolha: no cursor, por tempo, em partes iguais ou por silêncio. Preencha o número pedido, se houver, e ative “Adicionar partes à lista”. O áudio do canal não muda.</li>
+      <li>Em “Partes”, escolha uma parte. Use “Ouvir parte”, dê um nome em “Nome da parte” (ao sair do campo, o nome vale).</li>
+      <li>Em “Usar as partes”, escolha o canal (ou Novo canal) e ative “Colocar parte no canal”. Ou use “Exportar parte em WAV” e “Exportar todas as partes em ZIP”.</li>
     </ol>
     <h3>6c. Emendar áudios</h3>
-    <p>Na seção Edição, em “Emendar áudios”, escolha o canal de origem e o de destino, onde juntar (no final ou no cursor) e uma pausa opcional, e ative “Emendar”. O canal de origem fica como está. “Desfazer a emenda” volta atrás.</p>
+    <p>Na seção Edição, em “Emendar áudios”, escolha “Juntar o áudio do canal” e “No final do canal”, e ative “Emendar”. Para inserir no meio, use Copiar e “Colar no cursor”. O canal de origem fica como está. “Desfazer a emenda” volta atrás.</p>
 
     <h3>7. Afinação de voz</h3>
     <p>Na seção Afinação de voz, escolha o canal da voz, a escala, o tom, a velocidade e o trecho, e ative “Afinar a voz”. Ela não diz as notas. Funciona melhor com uma voz sozinha. Ouça o resultado e use Desfazer na seção Edição se não gostar.</p>
@@ -1979,40 +1979,37 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
 (function(){
   const sec=$('edSec'),who='Edição';
   sec.append(h('h2',{id:'h-ed',tabindex:'-1',text:'Edição'}));
-  sec.append(h('p',{class:'hint',text:'Passo a passo: 1) escolha o canal; 2) leve o cursor ao ponto; 3) marque o início e o fim; 4) corte, copie, cole ou silencie. Mais abaixo: “Dividir áudio” separa em partes e “Emendar áudios” junta um áudio no outro. Tudo pode ser desfeito.'}));
-  edSelW=selectField('edCh','Canal a editar',chOpts(),'0',(v,t)=>say('Editando '+t));regChSel(edSelW.sel);
+  edSelW=selectField('edCh','Canal',chOpts(),'0',(v,t)=>say('Editando '+t));regChSel(edSelW.sel);
   edCur=h('output',{class:'tstat','aria-hidden':'true',text:'0:00.000'});
-  stepW=selectField('edStep','Tamanho do passo do cursor',[['1','1 segundo'],['0.1','100 milissegundos'],['0.01','10 milissegundos']],'0.1',(v,t)=>say('Passo de '+t));
+  stepW=selectField('edStep','Passo',[['1','1 segundo'],['0.1','100 milissegundos'],['0.01','10 milissegundos']],'0.1',(v,t)=>say('Passo de '+t));
   reactS=slider({id:'edReact',who,label:'Compensação ao marcar tocando',min:0,max:500,step:10,btn:50,value:150,spoken:sMs,short:vMs,onChange:()=>{}});
   reactS.val=()=>+reactS.input.value;
-  const wA=textField('edA','Início da seleção (minutos:segundos.milésimos)',v=>{
+  const wA=textField('edA','Início',v=>{
     const t=parseT(v);if(v.trim()===''){sel.a=null;afterMark('Início removido.');return}
     if(t==null){say('Tempo inválido. Use por exemplo 12.3 ou 0:12.300.');wA.inp.value=sel.a==null?'':fmtT(sel.a);return}
     sel.a=t;afterMark('Início definido em '+spokenPos(t)+'.');
   });
-  const wB=textField('edB','Fim da seleção (minutos:segundos.milésimos)',v=>{
+  const wB=textField('edB','Fim',v=>{
     const t=parseT(v);if(v.trim()===''){sel.b=null;afterMark('Fim removido.');return}
     if(t==null){say('Tempo inválido. Use por exemplo 15.1 ou 0:15.100.');wB.inp.value=sel.b==null?'':fmtT(sel.b);return}
     sel.b=t;afterMark('Fim definido em '+spokenPos(t)+'.');
   });
   inA=wA.inp;inB=wB.inp;
   const posText=t=>spokenPos(t)+', de '+spokenDur(dur())+' no total';
-  const edPos=h('input',{type:'range',id:'edPos','data-nav':'',min:0,max:0,step:10,value:0,disabled:true,'aria-label':'Posição do cursor'});
+  const edPos=h('input',{type:'range',id:'edPos','data-nav':'',min:0,max:0,step:10,value:0,disabled:true,'aria-label':'Posição do cursor, setas movem 10 milissegundos'});
   edPosUp=()=>{
     const d=dur();edPos.disabled=!d;edPos.max=String(Math.round(d*1000));
     if(document.activeElement!==edPos)edPos.value=String(Math.round(pos()*1000));
     edPos.setAttribute('aria-valuetext',posText(+edPos.value/1000));
   };
   edPos.addEventListener('input',()=>{seek(+edPos.value/1000-pos(),true);edPos.setAttribute('aria-valuetext',posText(+edPos.value/1000))});
-  const posW=h('div',{class:'field'},h('label',{for:'edPos',text:'Posição do cursor (setas movem 10 milissegundos)'}),edPos);
+  const posW=h('div',{class:'field'},h('label',{for:'edPos',text:'Posição'}),edPos);
   const selTo=(a,b2,msg)=>{const c=editCh();if(!c)return;const d=c.buffer.duration;a=a==null?0:a;b2=b2==null?d:b2;
     if(b2-a<.005){say('Não há trecho nessa região. Mova o cursor.');return}
     setSel(a,b2);say(msg+' Duração '+sec1(b2-a)+' segundos.')};
 
   const col1=h('div',{class:'pcol'},
-    h('h3',{text:'1. Cursor'}),
     edSelW,
-    h('div',{class:'row'},h('span',{class:'lbl',text:'Cursor:'}),edCur),
     posW,
     stepW,
     h('div',{class:'row'},
@@ -2024,7 +2021,6 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     btn('Tocar ao redor do cursor (2 s antes e depois)',()=>{const p=pos();playRange(p-2,p+2,p,'Tocando ao redor do cursor')}),
     btn('Voltar 2 s e tocar',()=>{const p=pos();playRange(p-2,dur(),p,'Voltando 2 segundos')}));
   const col2=h('div',{class:'pcol'},
-    h('h3',{text:'2. Marcar o trecho'}),
     h('div',{class:'row'},
       btn('Marcar início aqui',markStart,'btn primary'),
       btn('Marcar fim aqui',markEnd,'btn primary')),
@@ -2043,7 +2039,6 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     btn('Ajustar pontos ao silêncio mais próximo',doSnap),
     btn('Tocar seleção',()=>{if(needSel())playRange(sel.a,sel.b,sel.a,'Tocando a seleção')}));
   const col3=h('div',{class:'pcol'},
-    h('h3',{text:'3. Editar o canal'}),
     h('div',{class:'row'},btn('Cortar',doCut,'btn primary'),btn('Copiar',doCopy),btn('Colar no cursor',doPaste)),
     btn('Silenciar seleção',doSilence),
     btn('Manter só a seleção',doTrim),
@@ -2066,30 +2061,26 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
   const parts=[];
   const DV={
     cursor:{txt:'Divide o áudio do canal em duas partes: uma antes e outra depois do cursor.'},
-    sel:{txt:'Cria a parte marcada. Com a opção “Incluir também o que está fora da seleção”, cria também a parte antes e a parte depois.'},
     tempo:{lab:'Segundos de cada parte',def:30,min:.1,max:3600,step:.1,txt:'Corta o áudio em partes de mesmo tamanho em segundos. A última pode ser menor.'},
     iguais:{lab:'Número de partes (de 2 a 50)',def:2,min:2,max:50,step:1,txt:'Divide o áudio em partes de mesma duração.'},
     silencio:{lab:'Silêncio mínimo para cortar, em segundos',def:1,min:.1,max:30,step:.1,txt:'Corta no meio de cada pausa em silêncio que durar pelo menos o tempo informado.'}
   };
-  const dvMode=selectField('dvMode','Como dividir',[['cursor','Em um ponto: no cursor'],['sel','Pela seleção marcada'],['tempo','Por tempo'],['iguais','Em partes iguais'],['silencio','Por silêncio']],'cursor',(v,t)=>{dvUpdate();say('Como dividir: '+t+'. '+DV[v].txt)});
+  const dvMode=selectField('dvMode','Dividir',[['cursor','No cursor'],['tempo','Por tempo'],['iguais','Em partes iguais'],['silencio','Por silêncio']],'cursor',(v,t)=>{dvUpdate();say('Como dividir: '+t+'. '+DV[v].txt)});
   dvMode.sel.setAttribute('data-nav','');
   const dvArgW=numField('dvArg','',30,.1,3600,.1);
-  const dvIncW=checkField('dvInc','Incluir também o que está fora da seleção, antes e depois');
   function dvUpdate(){
     const m=dvMode.sel.value,d=DV[m];
-    dvArgW.hidden=!d.lab;dvIncW.hidden=m!=='sel';
+    dvArgW.hidden=!d.lab;
     if(d.lab){dvArgW.lab.textContent=d.lab;dvArgW.inp.min=d.min;dvArgW.inp.max=d.max;dvArgW.inp.step=d.step;dvArgW.inp.value=String(d.def)}
   }
   const dvListEl=h('select',{id:'dvList','data-nav':''});
-  const dvListW=h('div',{class:'field'},h('label',{for:'dvList',text:'Partes da lista'}),dvListEl);
-  const dvNameW=textField('dvName','Nome da parte selecionada',v=>dvRename(v));
+  const dvListW=h('div',{class:'field'},h('label',{for:'dvList',text:'Partes'}),dvListEl);
+  const dvNameW=textField('dvName','Nome da parte',v=>dvRename(v));
   dvNameW.inp.setAttribute('data-nav','');
-  const dvTo=regChSel(selectField('dvTo','Colocar a parte em',[['new','Novo canal']],'new',()=>{}).sel,'Novo canal');
+  const dvTo=regChSel(selectField('dvTo','Colocar em',[['new','Novo canal']],'new',()=>{}).sel,'Novo canal');
   const dvToW=dvTo.parentNode;
   dvTo.setAttribute('data-nav','');
-  const dvHow=selectField('dvHow','Como colocar',[['replace','Substituir o que há no canal'],['append','Emendar no final do canal']],'replace',()=>{});
-  dvHow.sel.setAttribute('data-nav','');
-  const curPart=()=>parts.length?parts[dvListEl.selectedIndex]:null;
+    const curPart=()=>parts.length?parts[dvListEl.selectedIndex]:null;
   const pdur=p=>(p.i1-p.i0)/p.buf.sampleRate;
   function dvRender(keep){
     const prev=keep!=null?keep:dvListEl.selectedIndex;
@@ -2108,10 +2099,6 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
       const p=idx(pos(),b);
       if(p<=0||p>=total){say('O cursor precisa estar no meio do áudio, nem no início nem no fim. Mova o cursor primeiro.');return}
       segs=pSegments(total,[p]);
-    }else if(mode==='sel'){
-      if(!needSel())return;
-      const x=idx(sel.a,b),y=idx(sel.b,b);
-      segs=dvIncW.inp.checked?pSegments(total,[x,y]):[[x,y]];
     }else if(mode==='tempo'){
       const v=+dvArgW.inp.value;
       if(!(v>=.1)){say('Digite um número de segundos maior que zero.');return}
@@ -2153,7 +2140,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     const p=curPart();if(!p){say('A lista está vazia. Adicione partes primeiro.');return}
     if(R.state!=='idle'){say('Pare a gravação primeiro.');return}
     ensureCtx();
-    const v=dvTo.value,how=dvHow.sel.value;
+    const v=dvTo.value,how='replace';
     let k;
     if(v==='new'){if(A>=N){say('A mesa já tem '+N+' canais. Escolha um canal existente.');return}k=A}else k=+v;
     const t=chans[k];
@@ -2200,30 +2187,24 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
   const dvBlock=h('div',{class:'pgrid edblock'},
     h('div',{class:'pcol'},
       h('h3',{id:'h-dv',text:'Dividir áudio'}),
-      h('p',{class:'hint',text:'Separa o áudio do canal escolhido em partes. O canal não muda: as partes vão para uma lista, onde você ouve, dá nome, exporta ou coloca em canais.'}),
-      dvMode,dvArgW,dvIncW,
+      dvMode,dvArgW,
       btn('Adicionar partes à lista',dvRun,'btn primary')),
     h('div',{class:'pcol'},
-      h('h3',{text:'Partes da lista'}),
       dvListW,
       h('div',{class:'row'},btn('Ouvir parte',dvListen),btn('Parar de ouvir',()=>{pvStop();say('Parado.')},'btn quiet')),
       dvNameW,
-      btn('Aplicar nome',()=>dvRename(dvNameW.inp.value),'btn quiet'),
-      h('div',{class:'row'},btn('Remover parte da lista',dvRemove,'btn quiet'),btn('Limpar lista',dvClear,'btn quiet'))),
+      btn('Remover parte da lista',dvRemove,'btn quiet')),
     h('div',{class:'pcol'},
-      h('h3',{text:'Usar as partes'}),
-      dvToW,dvHow,
+      dvToW,
       btn('Colocar parte no canal',dvPut),
       btn('Exportar parte em WAV',dvExport),
       btn('Exportar todas as partes em ZIP',dvExportAll)));
   dvUpdate();dvRender(0);
 
   /* ---- Emendar áudios ---- */
-  const emFrom=selectField('emFrom','Canal de origem: o áudio que será juntado',chOpts(),'0',()=>{});regChSel(emFrom.sel);
-  const emTo=selectField('emTo','Canal de destino: onde o áudio será juntado',chOpts(),'0',()=>{});regChSel(emTo.sel);
-  const emWhere=selectField('emWhere','Onde juntar',[['fim','No final do canal de destino'],['cursor','No cursor do canal de destino, inserindo']],'fim',()=>{});
-  [emFrom.sel,emTo.sel,emWhere.sel].forEach(e=>e.setAttribute('data-nav',''));
-  const emGap=numField('emGap','Pausa antes do áudio emendado, em segundos',0,0,30,.1);
+  const emFrom=selectField('emFrom','Juntar o áudio do canal',chOpts(),'0',()=>{});regChSel(emFrom.sel);
+  const emTo=selectField('emTo','No final do canal',chOpts(),'0',()=>{});regChSel(emTo.sel);
+  [emFrom.sel,emTo.sel].forEach(e=>e.setAttribute('data-nav',''));
   emFix=()=>{if(A>1&&emFrom.sel.value===emTo.sel.value)emFrom.sel.value=emTo.sel.value==='0'?'1':'0'};
   function doJoin(){
     if(A<2){say('Para emendar são precisos dois canais. Use Adicionar canal e coloque um áudio em cada um.');return}
@@ -2234,9 +2215,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     ensureCtx();if(playing)pause(false);pvStop();
     const sr=a.buffer.sampleRate;
     let clipD=dataOf(a.buffer);
-    const g=Math.round(Math.max(0,+emGap.inp.value||0)*sr);
-    if(g>0)clipD=clipD.map(d=>{const o=new Float32Array(g+d.length);o.set(d,g);return o});
-    const at=b.buffer?(emWhere.sel.value==='cursor'?Math.min(Math.round(pos()*sr),b.buffer.length):b.buffer.length):0;
+    const at=b.buffer?b.buffer.length:0;
     const res=pPaste(b.buffer?dataOf(b.buffer):null,at,clipD,sr);
     commit(b,bufFromData(res,sr),'emenda do '+a.who);
     if(!b.name)b.name=a.name;refreshLabel(b);
@@ -2246,8 +2225,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
   }
   const emBlock=h('div',{class:'pcol edblock'},
     h('h3',{id:'h-em',text:'Emendar áudios'}),
-    h('p',{class:'hint',text:'Junta o áudio de um canal no final de outro, ou no cursor dele. O canal de origem fica como está.'}),
-    emFrom,emTo,emWhere,emGap,
+    emFrom,emTo,
     h('div',{class:'row'},btn('Emendar',doJoin,'btn primary'),btn('Desfazer a emenda',()=>undo(chans[+emTo.sel.value]),'btn quiet')));
 
   sec.append(h('div',{class:'pgrid'},col1,col2,col3),dvBlock,emBlock);
