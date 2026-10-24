@@ -1,5 +1,10 @@
 import asyncio, subprocess, time, sys, zipfile
 from playwright.async_api import async_playwright
+import wave, struct, math
+def _mkwav(path='/tmp/mix_teste.wav'):
+    r=44100;w=wave.open(path,'wb');w.setnchannels(1);w.setsampwidth(2);w.setframerate(r)
+    w.writeframes(b''.join(struct.pack('<h',int(12000*math.sin(2*math.pi*440*(i/r))) if (i/r)%2<1.5 else 0) for i in range(r*6)));w.close()
+_mkwav()
 fails=[]
 def ck(n,ok,x=''):
     print(('OK   ' if ok else 'FALHA'),n,x)
@@ -47,10 +52,10 @@ async def main():
             ck('titulo trocou','Canal 3' in await pg.inner_text('#edTitle'))
             await pg.click('text=Excluir todo o áudio do canal');await pg.click('text=Excluir todo o áudio do canal');ck('excluiu','esvaziado' in await say(),await say())
             async with pg.expect_file_chooser() as fc: await pg.click('text=Colocar arquivo a partir do cursor')
-            f=await fc.value;await f.set_files('/tmp/claude-0/-home-claude/4129777c-0cf8-5d04-a000-871a28639019/scratchpad/smoke/mix.wav');await pg.wait_for_timeout(1500)
+            f=await fc.value;await f.set_files('/tmp/mix_teste.wav');await pg.wait_for_timeout(1500)
             ck('colocou arquivo','colocado' in await say(),await say())
             async with pg.expect_file_chooser() as fc: await pg.click('text=Inserir arquivo no cursor')
-            f=await fc.value;await f.set_files('/tmp/claude-0/-home-claude/4129777c-0cf8-5d04-a000-871a28639019/scratchpad/smoke/mix.wav');await pg.wait_for_timeout(1500)
+            f=await fc.value;await f.set_files('/tmp/mix_teste.wav');await pg.wait_for_timeout(1500)
             ck('inseriu arquivo','inserido' in await say(),await say())
             await pg.keyboard.press('Escape');await pg.wait_for_timeout(150)
             ck('fecha com Esc',not await pg.is_visible('#edLayer'));ck('foco volta',await pg.evaluate("document.activeElement.getAttribute('aria-label')")=='Canal 3, editar áudio',await pg.evaluate("document.activeElement.getAttribute('aria-label')"))

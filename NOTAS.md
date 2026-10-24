@@ -75,12 +75,12 @@ Calendário sugerido: 1.1 Novidades, renomear canais, salvar automático, fade e
 
 ## Estado atual: versão 1.1 de teste (out/2026)
 Publicada só na cópia de teste (pasta `teste-7k2m9x`). A raiz continua na 1.0 até o lançamento mensal.
-Novidades da 1.1: mesa abre sem canais com Adicionar canal e Remover canal (máximo 6); menu Projetos reordenado (Abrir, Novo, Salvar, Exportar e Importar); botão Editar áudio em cada canal (tela própria com início e fim digitados, passos, cortar, copiar, colar, desfazer, Inserir arquivo no cursor para emendar, Colocar arquivo a partir do cursor para locução sobre trilha, e Separar em faixas: divisões marcadas ouvindo ou por silêncio, salvas em ZIP de WAV).
+Novidades da 1.1: nome do canal à escolha (campo "Nome do canal" em Ajustes e efeitos; vale para botões, listas, mensagens e projetos); mesa abre sem canais com Adicionar canal e Remover canal (máximo 6); menu Projetos reordenado (Abrir, Novo, Salvar, Exportar e Importar); botão Editar áudio em cada canal (tela própria com início e fim digitados, passos, cortar, copiar, colar, desfazer, Inserir arquivo no cursor para emendar, Colocar arquivo a partir do cursor para locução sobre trilha, e Separar em faixas: divisões marcadas ouvindo ou por silêncio, salvas em ZIP de WAV).
 Pendente: o autor testar com TalkBack e NVDA; ajustes pedidos por ele; depois lançar como oficial.
 
 ## Código-fonte (pasta `fonte`)
 - `fonte/app-body.html`: fonte do app (um IIFE em JavaScript, funções puras entre `/*PURE-START*/` e `/*PURE-END*/`).
 - `fonte/build.py`: gera `site/index.html` e a cópia de teste. Os caminhos dentro dele são `/home/claude/mesa/...`: ajustar para a pasta onde estiver. Precisa de `site/` com sw.js, manifest e ícones (iguais aos da raiz deste repositório). Aumentar o número do cache de teste (`sl-mix-teste-vN`) a cada publicação.
 - `fonte/test.js` e `fonte/test_tune.js`: testes das funções puras (`node test.js`).
-- `fonte/testes/*.py`: testes de navegador (Playwright; o mais novo é pw_v12.py). `run6.py arquivo.py` adiciona 6 canais antes de rodar os testes antigos. Servem um site em `/home/claude/mesa/site`.
+- `fonte/testes/*.py`: testes de navegador (Playwright; o mais novo é pw_v13.py, nome dos canais; pw_v12.py cobre Editar áudio). `run6.py arquivo.py` adiciona 6 canais antes de rodar os testes antigos. Servem um site em `/home/claude/mesa/site`.
 - Publicar: copiar `site/teste-7k2m9x/*` para a pasta `teste-7k2m9x` deste repositório. O remote precisa continuar `https://github.com/Gutembergguerra/mesa-digital` (o proxy só autoriza o nome antigo; o push redireciona).

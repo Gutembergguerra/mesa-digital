@@ -406,7 +406,7 @@ header .field label{font-size:.85rem}
     <p>A lista “Ir para” leva direto a um canal ou a uma seção. A lista “Visualização dos canais” muda como os canais aparecem. Compacto mostra só volume, mudo, solo, armar e o botão Ajustes e efeitos. Faixas mostra uma linha de botões por canal. Lista mostra tudo de cada canal. Lado a lado põe os canais lado a lado, para passar com o dedo. Um canal por vez mostra só um. Mesa vertical deixa os volumes como faders em pé.</p>
 
     <h3>1b. Adicionar e remover canais</h3>
-    <p>A mesa abre sem canais. Na área Canais, ative “Adicionar canal” quantas vezes precisar, até 6. “Remover canal” tira o último canal; se ele tiver áudio, é preciso apertar de novo para confirmar. Os números dos canais seguem a ordem em que foram criados.</p>
+    <p>A mesa abre sem canais. Na área Canais, ative “Adicionar canal” quantas vezes precisar, até 6. “Remover canal” tira o último canal; se ele tiver áudio, é preciso apertar de novo para confirmar. Os números dos canais seguem a ordem em que foram criados. Para dar um nome ao canal, como Violão ou Voz, ative “Ajustes e efeitos” do canal e escreva no campo “Nome do canal”. O leitor passa a falar esse nome nos botões, nas listas e nas mensagens, e o nome fica salvo no projeto. Para voltar a Canal e o número, apague o texto do campo.</p>
 
     <h3>2. Carregar um arquivo de áudio</h3>
     <ol>
@@ -509,7 +509,7 @@ header .field label{font-size:.85rem}
     </ul>
 
     <h3>Novidades</h3>
-    <p>Versão 1.1 (teste): mesa que abre vazia, com Adicionar canal e Remover canal; menu Projetos reorganizado, com Novo projeto; botão Editar áudio em cada canal, com tela própria; Inserir arquivo no cursor e Colocar arquivo a partir do cursor, para emendar e para locução sobre trilha; Separar em faixas, com divisões marcadas ouvindo e arquivo ZIP.</p>
+    <p>Versão 1.1 (teste): nome do canal à sua escolha, por exemplo Violão e Voz; mesa que abre vazia, com Adicionar canal e Remover canal; menu Projetos reorganizado, com Novo projeto; botão Editar áudio em cada canal, com tela própria; Inserir arquivo no cursor e Colocar arquivo a partir do cursor, para emendar e para locução sobre trilha; Separar em faixas, com divisões marcadas ouvindo e arquivo ZIP.</p>
     <p>Versão 1.0: primeira versão publicada, com seis canais e Master, gravação em um ou vários canais, efeitos e presets por canal, edição, afinação de voz, reverb de voz, projetos e exportação em WAV e MP3.</p>
     <p class="hint">SL-Mix: Áudio Acessível. Versão 1.1. © 2026 Gutenberg Guerra Lima. Todos os direitos reservados.</p>
     <p><button type="button" class="btn primary" id="helpClose2">Fechar instruções</button></p>
@@ -944,7 +944,7 @@ const dbToGain=(v,fl)=>(fl!=null&&v<=fl)?0:Math.pow(10,v/20);
 const sec1=t=>(Math.round(t*10)/10).toFixed(1).replace('.',',');
 
 function slider(o){
-  const name=o.who+', '+o.label.toLowerCase();
+  let name=o.who+', '+o.label.toLowerCase();
   const out=h('output',{class:'val','aria-hidden':'true'});
   const input=h('input',{type:'range',id:o.id,min:o.min,max:o.max,step:o.step,'aria-label':name});
   input.value=o.value;
@@ -957,7 +957,7 @@ function slider(o){
     input.setAttribute('aria-valuetext',sp);
     out.textContent=o.short(v);
     o.onChange(v);
-    if(speak)say(name+': '+sp);
+    if(speak)say(input.getAttribute('aria-label')+': '+sp);
   }
   SL[o.id]=apply;
   input.addEventListener('input',()=>apply(+input.value,false));
@@ -984,7 +984,8 @@ function textField(id,label,on,mode){
   w.inp=i;return w;
 }
 let A=0;
-const chOpts=()=>Array.from({length:Math.max(A,1)},(_,i)=>[String(i),'Canal '+(i+1)]);
+const chLabel=i=>(chans[i]&&chans[i].who)||'Canal '+(i+1);
+const chOpts=()=>Array.from({length:Math.max(A,1)},(_,i)=>[String(i),chLabel(i)]);
 const CHSEL=[];
 function regChSel(el,lead){CHSEL.push({el,lead});return el}
 let pv=null,emFix=null;
@@ -1265,17 +1266,17 @@ function commit(c,newBuf,desc){
 }
 function undo(c){
   const e=c.undo.pop();
-  if(!e){say('Nada para desfazer no '+c.who);return}
+  if(!e){say('Nada para desfazer '+c.no);return}
   c.redo.push({buf:c.buffer,desc:e.desc,ed:c.edited});
   c.buffer=e.buf;c.edited=e.ed;refreshLabel(c);refreshPlayback();showTime();
-  say('Desfeito no '+c.who+': '+e.desc);
+  say('Desfeito '+c.no+': '+e.desc);
 }
 function redo(c){
   const e=c.redo.pop();
-  if(!e){say('Nada para refazer no '+c.who);return}
+  if(!e){say('Nada para refazer '+c.no);return}
   c.undo.push({buf:c.buffer,desc:e.desc,ed:c.edited});
   c.buffer=e.buf;c.edited=e.ed;refreshLabel(c);refreshPlayback();showTime();
-  say('Refeito no '+c.who+': '+e.desc);
+  say('Refeito '+c.no+': '+e.desc);
 }
 function loadFile(c,file,quiet){
   if(!file)return Promise.resolve(false);
@@ -1442,7 +1443,7 @@ function recTargets(){
 function recLabel(){
   if(!recBtn||R.state!=='idle')return;
   const t=recTargets();
-  recBtn.textContent=t.length===1?'Gravar no Canal '+(t[0].i+1):'Gravar nos canais '+t.map(c=>c.i+1).join(', ');
+  recBtn.textContent=t.length===1?'Gravar '+t[0].no:'Gravar nos canais '+t.map(c=>c.custom||c.i+1).join(', ');
 }
 async function listInputs(){
   try{
@@ -1536,7 +1537,7 @@ async function startRecording(){
   recBtn.textContent='Parar gravação';recBtn.classList.add('danger');
   if(MT.withPlay&&!MT.on){MT.auto=true;startMetro()}
   cancelAnimationFrame(raf);tick();
-  say(tg.length===1?'Gravando no '+c.who:'Gravando nos canais '+tg.map(x=>x.i+1).join(', '));
+  say(tg.length===1?'Gravando '+c.no:'Gravando nos canais '+tg.map(x=>x.custom||x.i+1).join(', '));
 }
 function stopRecording(){
   if(R.state==='count'){R.cancel=true;return}
@@ -1567,7 +1568,7 @@ function stopRecording(){
   edSelW.sel.value=String(c.i);
   setSel(R.startPos,R.startPos+secs);
   offset=R.startPos;showTime();
-  say('Gravação concluída '+(tg.length===1?'no '+c.who:'nos canais '+tg.map(x=>x.i+1).join(', '))+', '+sec1(secs)+' segundos. O trecho gravado ficou selecionado e o cursor voltou ao início dele.');
+  say('Gravação concluída '+(tg.length===1?c.no:'nos canais '+tg.map(x=>x.custom||x.i+1).join(', '))+', '+sec1(secs)+' segundos. O trecho gravado ficou selecionado e o cursor voltou ao início dele.');
 }
 
 /* ---------- edição ---------- */
@@ -1621,13 +1622,13 @@ function doCut(){
   const a=sel.a,e=sel.b;
   commit(c,bufFromData(pCut(D,i0,i1,b.sampleRate),b.sampleRate),'corte de '+sec1(a)+' a '+sec1(e)+' segundos');
   setSel(null,null);offset=Math.min(a,dur());showTime();
-  say('Corte feito no '+c.who+': '+sec1(e-a)+' segundos removidos e copiados. Cursor em '+spokenPos(offset)+'.');
+  say('Corte feito '+c.no+': '+sec1(e-a)+' segundos removidos e copiados. Cursor em '+spokenPos(offset)+'.');
 }
 function doCopy(){
   if(!needSel())return;const c=editCh();if(!c)return;
   const b=c.buffer,D=dataOf(b);
   clip={D:pExtract(D,idx(sel.a,b),idx(sel.b,b)),sr:b.sampleRate};
-  say('Copiado do '+c.who+': '+sec1(sel.b-sel.a)+' segundos.');
+  say('Copiado '+c.de+': '+sec1(sel.b-sel.a)+' segundos.');
 }
 function doPaste(){
   if(!clip){say('Nada copiado ainda.');return}
@@ -1635,20 +1636,20 @@ function doPaste(){
   const sr=ctx.sampleRate,at=Math.round(pos()*sr);
   commit(c,bufFromData(pPaste(c.buffer?dataOf(c.buffer):null,at,clip.D,sr),sr),'colar '+sec1(clip.D[0].length/sr)+' segundos em '+sec1(pos())+' segundos');
   c.name=c.name||'Colagem';refreshLabel(c);
-  say('Colado no '+c.who+' a partir de '+spokenPos(pos())+'.');
+  say('Colado '+c.no+' a partir de '+spokenPos(pos())+'.');
 }
 function doSilence(){
   if(!needSel())return;const c=editCh();if(!c)return;
   const b=c.buffer,i0=idx(sel.a,b),i1=idx(sel.b,b);
   commit(c,bufFromData(pSilence(dataOf(b),i0,i1,b.sampleRate),b.sampleRate),'silêncio de '+sec1(sel.a)+' a '+sec1(sel.b)+' segundos');
-  say('Trecho silenciado no '+c.who+'.');
+  say('Trecho silenciado '+c.no+'.');
 }
 function doTrim(){
   if(!needSel())return;const c=editCh();if(!c)return;
   const b=c.buffer,i0=idx(sel.a,b),i1=idx(sel.b,b);
   commit(c,bufFromData(pTrim(dataOf(b),i0,i1,b.sampleRate),b.sampleRate),'manter só de '+sec1(sel.a)+' a '+sec1(sel.b)+' segundos');
   setSel(null,null);offset=0;showTime();
-  say('Ficou só a seleção no '+c.who+'. Cursor no início.');
+  say('Ficou só a seleção '+c.no+'. Cursor no início.');
 }
 function doShift(ms){
   const c=editCh();if(!c)return;
@@ -1674,28 +1675,27 @@ const FXLIST=[['pre','Pré-amplificador'],['eq','Equalizador'],['dly','Delay'],[
 const FXSET=FXLIST.map(x=>x[0]);
 const paneOpener=k=>FXSET.includes(k)?'fx':k;
 function buildBar(c,panes,moreBtn){
-  const who=c.who;
   c.panes=panes;c.pane=null;c.openers={};
-  c.tb=h('div',{class:'tbar',role:'toolbar','aria-label':who+', controles. Use as setas para a direita e para a esquerda.','aria-orientation':'horizontal'});
+  c.tb=h('div',{class:'tbar',role:'toolbar','aria-label':c.who+', controles. Use as setas para a direita e para a esquerda.','aria-orientation':'horizontal'});
   BAR.forEach(([k,label])=>{
-    const b=btn(label,()=>togglePane(c,k),'btn tb-open',{'aria-expanded':'false','aria-label':who+', '+label.toLowerCase()});
+    const b=btn(label,()=>togglePane(c,k),'btn tb-open',{'aria-expanded':'false','aria-label':c.who+', '+label.toLowerCase()});
     c.openers[k]=b;
   });
-  const mais=btn('Mais',()=>openMenu(c.i,mais),'btn tb-open',{'aria-label':who+', mais ajustes: presets, copiar efeitos, restaurar','aria-haspopup':'dialog'});
+  const mais=btn('Mais',()=>openMenu(c.i,mais),'btn tb-open',{'aria-label':c.who+', mais ajustes: presets, copiar efeitos, restaurar','aria-haspopup':'dialog'});
   c.openers.mais=mais;
-  const edt=btn('Editar',()=>openEd(c.i,edt),'btn tb-open',{'aria-label':who+', editar áudio','aria-haspopup':'dialog','aria-expanded':'false'});
+  const edt=btn('Editar',()=>openEd(c.i,edt),'btn tb-open',{'aria-label':c.who+', editar áudio','aria-haspopup':'dialog','aria-expanded':'false'});
   c.openers.ed=edt;
   c.tb.append(c.openers.vol,c.openers.pan,c.openers.fx,c.openers.prs,c.openers.file,edt,mais);
-  const fm=h('div',{class:'fxmenu',role:'group','aria-label':who+', escolher efeito'});
+  const fm=h('div',{class:'fxmenu',role:'group','aria-label':c.who+', escolher efeito'});
   c.fxBtns={};
   FXLIST.forEach(([k,label])=>{
-    const b=btn(label,()=>selectFx(c,k),'btn fxsel',{'aria-pressed':'false','aria-label':who+', '+label.toLowerCase()});
+    const b=btn(label,()=>selectFx(c,k),'btn fxsel',{'aria-pressed':'false','aria-label':c.who+', '+label.toLowerCase()});
     c.fxBtns[k]=b;fm.append(b);
   });
   fm.append(btn('Reverb',()=>{
     const v=SE['vrCh'];if(v){v.value=String(c.i);v.dispatchEvent(new Event('change'))}
-    goSection('vr');say(who+': escolhido como canal da voz. Ajuste o Reverb de voz aqui.');
-  },'btn fxsel',{'aria-label':who+', reverb de voz'}));
+    goSection('vr');say(c.who+': escolhido como canal da voz. Ajuste o Reverb de voz aqui.');
+  },'btn fxsel',{'aria-label':c.who+', reverb de voz'}));
   c.panes.fx=fm;c.fxMenu=fm;
   c.tb.addEventListener('keydown',e=>barKey(c,e));
   const prp=h('div',{class:'prpane'},mkPresetField(c,'prp'+c.i));
@@ -1800,7 +1800,7 @@ const PRGROUPS=[
   ['Outros',[['limpo','Limpo: zera todos os efeitos']]]
 ];
 function mkPresetField(c,id){
-  const w=h('div',{class:'field'},h('label',{for:id,text:'Preset de efeitos do '+c.who}));
+  const w=h('div',{class:'field'},h('label',{for:id,text:'Preset de efeitos '+c.de}));
   const pr=h('select',{id},h('option',{value:'',text:'Escolher preset…'}));
   PRGROUPS.forEach(([g,list])=>{
     const og=h('optgroup',{label:g});list.forEach(([v,t])=>og.append(h('option',{value:v,text:t})));pr.append(og);
@@ -1820,11 +1820,11 @@ function setFx(c,vals){
   lvCh(c);
 }
 function buildExtras(c){
-  const p='c'+c.i,who=c.who;
+  const p='c'+c.i;
   let bp;bp=btn('Ouvir sem efeitos',()=>{
     c.bypass=!c.bypass;bp.setAttribute('aria-pressed',String(c.bypass));lvCh(c);
-    say(who+(c.bypass?': ouvindo sem efeitos. Seus ajustes continuam guardados.':': efeitos de volta.'));
-  },'btn',{'aria-pressed':'false','aria-label':who+', ouvir sem efeitos'});
+    say(c.who+(c.bypass?': ouvindo sem efeitos. Seus ajustes continuam guardados.':': efeitos de volta.'));
+  },'btn',{'aria-pressed':'false','aria-label':c.who+', ouvir sem efeitos'});
   c.bpBtn=bp;
   const prW=mkPresetField(c,'pr'+p);
   const cpW=h('div',{class:'field'},h('label',{for:'cp'+p,text:'Copiar efeitos deste canal para'}));
@@ -1835,21 +1835,22 @@ function buildExtras(c){
     const vals={dOn:c.s.dOn,cOn:c.s.cOn};Object.keys(FXID).forEach(k=>{vals[k]=c.s[k]});
     const tg=v==='all'?chans.filter(t=>t!==c&&t.i<A):[chans[+v]];
     tg.forEach(t=>setFx(t,vals));
-    say('Efeitos do '+who+' copiados para '+(v==='all'?'todos os outros canais':'Canal '+(+v+1))+'.');
+    say('Efeitos '+c.de+' copiados para '+(v==='all'?'todos os outros canais':chans[+v].who)+'.');
   });
   cpW.append(cp);
   const rs=btn('Restaurar efeitos deste canal',()=>{
-    if(!confirmTwice('fxr'+c.i,'Aperte de novo para zerar os efeitos do '+who+'. Volume e pan não mudam.'))return;
-    setFx(c,Object.assign({},FXDEF,{dOn:false,cOn:false}));say('Efeitos do '+who+' restaurados.');
-  },'btn quiet',{'aria-label':who+', restaurar efeitos'});
+    if(!confirmTwice('fxr'+c.i,'Aperte de novo para zerar os efeitos '+c.de+'. Volume e pan não mudam.'))return;
+    setFx(c,Object.assign({},FXDEF,{dOn:false,cOn:false}));say('Efeitos '+c.de+' restaurados.');
+  },'btn quiet',{'aria-label':c.who+', restaurar efeitos'});
   return h('div',{class:'xtra'},bp,prW,cpW,rs);
 }
 function buildChannel(i){
-  const who='Canal '+(i+1),p='c'+i;
-  const c={i,who,buffer:null,src:null,name:'',edited:false,undo:[],redo:[],
+  let who='Canal '+(i+1);const p='c'+i;
+  const c={i,who,custom:'',no:'no '+who,de:'do '+who,setWho:w=>{who=w},buffer:null,src:null,name:'',edited:false,undo:[],redo:[],
     s:{vol:0,pan:0,mute:false,solo:false,pre:0,heat:0,low:0,mid:0,high:0,
        dOn:false,dTime:300,dFb:35,dMix:30,cOn:false,cRate:.8,cDepth:50,cMix:40}};
-  c.title=h('h3',{id:'h'+p,tabindex:'-1'},h('span',{class:'chip','aria-hidden':'true',text:String(i+1)}),h('span',{text:who}));
+  c.titleTxt=h('span',{text:who});
+  c.title=h('h3',{id:'h'+p,tabindex:'-1'},h('span',{class:'chip','aria-hidden':'true',text:String(i+1)}),c.titleTxt);
   c.fileEl=h('p',{class:'file',id:'f'+p,text:'Vazio'});
   c.sumEl=h('p',{class:'sum',id:'sm'+p,text:'Vazio. Sem efeitos.'});
   c.fileInput=h('input',{type:'file',accept:'audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus',id:'in'+p,hidden:true,tabindex:'-1'});
@@ -1916,12 +1917,17 @@ function buildChannel(i){
   const filerow=h('div',{class:'filerow'},pick,c.fileInput,c.fileEl,rm);
   c.extra=buildExtras(c);
   c.extra.hidden=true;
+  c.nameW=textField('nm'+p,'Nome do canal',v=>setChName(c,v));
+  c.nameW.querySelector('label').setAttribute('aria-hidden','true');
+  c.nameInp=c.nameW.inp;c.nameInp.maxLength=30;c.nameInp.setAttribute('enterkeyhint','done');
+  c.nameInp.setAttribute('aria-label',who+', nome do canal. Escreva o nome que quiser');
+  c.nameW.hidden=true;
   c.sec=h('section',{class:'card','aria-labelledby':'h'+p,'data-ch':i},
-    c.title,c.sumEl,
+    c.title,c.sumEl,c.nameW,
     filerow,
     vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo,arm),more,edb,
     preBox,eqBox,dBox,cBox,c.extra);
-  c.menuNodes=[filerow,pan.wrap,preBox,eqBox,dBox,cBox,c.extra];
+  c.menuNodes=[c.nameW,filerow,pan.wrap,preBox,eqBox,dBox,cBox,c.extra];
   c.pairEl=c.sec.querySelector('.pair');c.sec.hidden=true;
   buildBar(c,{vol:vol.wrap,pan:pan.wrap,pre:preBox,eq:eqBox,dly:dBox,cho:cBox,file:filerow},more);
   c.sec.addEventListener('dblclick',e=>{if(e.target.closest('input,button,select,summary,a'))return;openMenu(c.i,more)});
@@ -2066,7 +2072,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
       }
       commit(c,bufFromData(out,sr),(fileMode==='insert'?'arquivo inserido em ':'arquivo colocado em ')+sec1(p0)+' segundos');
       if(!c.name)c.name=f.name;refreshLabel(c);
-      say(f.name+(fileMode==='insert'?' inserido no ':' colocado no ')+c.who+', a partir de '+spokenPos(p0)+'. O '+c.who+' agora tem '+sec1(c.buffer.duration)+' segundos. Para desfazer, use Desfazer.');
+      say(f.name+(fileMode==='insert'?' inserido ':' colocado ')+c.no+', a partir de '+spokenPos(p0)+'. '+c.who+' agora tem '+sec1(c.buffer.duration)+' segundos. Para desfazer, use Desfazer.');
     }catch(e){say('Não foi possível abrir o arquivo. Tente WAV, MP3 ou M4A.')}
   }
   fileIn.addEventListener('change',()=>{const f=fileIn.files[0];fileIn.value='';placeFile(f)});
@@ -2134,7 +2140,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
       try{
         const D=dataOf(b),pad=segs.length>99?3:2;
         const files=segs.map(([x,y],k)=>({name:'Faixa '+String(k+1).padStart(pad,'0')+'.wav',data:new Uint8Array(encodeWav(pTrim(D,x,y,sr),sr))}));
-        downloadBlob(new Blob([makeZip(files)],{type:'application/zip'}),safeName(c.name.replace(/\.[^.]*$/,'')||c.who)+' - faixas.zip');
+        downloadBlob(new Blob([makeZip(files)],{type:'application/zip'}),safeName(c.custom||c.name.replace(/\.[^.]*$/,'')||c.who)+' - faixas.zip');
         say(segs.length+' faixas salvas em um arquivo ZIP. Veja a pasta de downloads.');
       }catch(e){say('Não foi possível salvar as faixas. O áudio pode ser grande demais para este aparelho.')}
     },30);
@@ -2170,7 +2176,7 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     btn('Colocar arquivo a partir do cursor',()=>askFile('place')),
     btn('Excluir todo o áudio do canal',()=>{
       const c=editCh();if(!c)return;
-      if(!confirmTwice('edrm'+c.i,'Apagar todo o áudio do '+c.who+'? Aperte de novo para confirmar. Dá para desfazer.'))return;
+      if(!confirmTwice('edrm'+c.i,'Apagar todo o áudio '+c.de+'? Aperte de novo para confirmar. Dá para desfazer.'))return;
       clearChannel(c);setSel(null,null);
     },'btn quiet'),
     splitD,more);
@@ -2387,7 +2393,7 @@ async function doTune(){
     smooth:{rapida:.02,media:.08,suave:.2}[$('tuSpeed').value]||.08
   };
   tuning=true;
-  say('Analisando a voz do '+c.who+'. Isso pode levar alguns segundos.');
+  say('Analisando a voz '+c.de+'. Isso pode levar alguns segundos.');
   let said=false;
   try{
     const D=dataOf(b).map(d=>d.slice(i0,i1));
@@ -2404,7 +2410,7 @@ async function doTune(){
     const nd=pBlend(dataOf(b),r.out,i0,sr);
     commit(c,bufFromData(nd,sr),'afinação de voz'+(i0>0||i1<b.length?' na seleção':''));
     const pct=Math.round(r.plan.voiced/Math.max(1,r.plan.total)*100);
-    say('Afinação aplicada no '+c.who+'. Encontrei voz em '+pct+' por cento do trecho. Correção média de '+Math.round(r.plan.meanCents)+' centésimos de tom. Ouça o resultado. Para voltar ao original, use Desfazer na seção Edição.');
+    say('Afinação aplicada '+c.no+'. Encontrei voz em '+pct+' por cento do trecho. Correção média de '+Math.round(r.plan.meanCents)+' centésimos de tom. Ouça o resultado. Para voltar ao original, use Desfazer na seção Edição.');
   }catch(e){
     say('Não foi possível afinar a voz.');
   }finally{tuning=false}
@@ -2480,7 +2486,7 @@ function captureProject(name){
   Object.keys(TG).forEach(id=>{toggles[id]=TG[id].getAttribute('aria-pressed')==='true'});
   const chs=chans.map(c=>c.buffer?{sr:c.buffer.sampleRate,pcm:dataOf(c.buffer).map(d=>toI16(d)),name:c.name,edited:c.edited}:null);
   let secs=0;chs.forEach(c=>{if(c)secs=Math.max(secs,c.pcm[0].length/c.sr)});
-  return {meta:{name,savedAt:Date.now(),secs,count:A,sliders,selects,toggles},chs};
+  return {meta:{name,savedAt:Date.now(),secs,count:A,names:chans.map(c=>c.custom||''),sliders,selects,toggles},chs};
 }
 async function resampleTo(buf,sr){
   if(buf.sampleRate===sr)return buf;
@@ -2504,8 +2510,10 @@ async function applyProject(meta,chs){
       resetExtras(c);
       c.undo=[];c.redo=[];
       c.buffer=bufs[i];c.name=chs[i]?(chs[i].name||''):'';c.edited=chs[i]?!!chs[i].edited:false;
+      setChName(c,(meta.names&&meta.names[i])||'',true);
       refreshLabel(c);
     });
+    updateNames();
     Object.keys(meta.sliders||{}).forEach(id=>{if(SL[id])SL[id](meta.sliders[id],false)});
     Object.keys(meta.selects||{}).forEach(id=>{
       const s=SE[id];
@@ -2696,12 +2704,12 @@ const menuLayer=$('menuLayer'),menuBody=$('menuBody'),menuTitle=$('menuTitle'),m
 function menuRestore(){
   const c=chans[menuCh];
   c.menuNodes.forEach(n=>{if(n._ph){n._ph.replaceWith(n);n._ph=null}});
-  c.extra.hidden=true;
+  c.extra.hidden=true;c.nameW.hidden=true;
 }
 function menuFill(k){
   menuCh=k;const c=chans[k];
   c.menuNodes.forEach(n=>{const ph=document.createComment('');n.before(ph);n._ph=ph;menuBody.append(n)});
-  c.extra.hidden=false;
+  c.extra.hidden=false;c.nameW.hidden=false;
   menuTitle.textContent=c.who+', ajustes e efeitos';
   ['recCh','edCh','tuCh'].forEach(id=>{const e=SE[id];if(e){e.value=String(k);e.dispatchEvent(new Event('change'))}});
 }
@@ -2877,6 +2885,7 @@ function resetChannel(c){
   const was=quiet;quiet=true;
   try{
     c.buffer=null;c.name='';c.edited=false;c.undo=[];c.redo=[];
+    setChName(c,'',true);
     resetExtras(c);
     SL['vc'+c.i](0,false);SL['pc'+c.i](0,false);
     ['mu','so'].forEach(k=>{const b=TG[k+'c'+c.i];if(b&&b.getAttribute('aria-pressed')==='true')b.click()});
@@ -2890,7 +2899,7 @@ function fillChSels(){
   CHSEL.forEach(({el,lead})=>{
     const keep=el.value;el.innerHTML='';
     if(lead)el.append(h('option',{value:'new',text:lead}));
-    for(let i=0;i<Math.max(A,1);i++)el.append(h('option',{value:String(i),text:'Canal '+(i+1)}));
+    for(let i=0;i<Math.max(A,1);i++)el.append(h('option',{value:String(i),text:chLabel(i)}));
     const ok=Array.from(el.options).some(o=>o.value===keep);
     el.value=ok?keep:(lead?'new':'0');
     if(el.value!==keep&&!lead)el.dispatchEvent(new Event('change'));
@@ -2903,18 +2912,52 @@ function refreshChannels(){
   chans.forEach(c=>{
     const cp=c.cpSel;if(!cp)return;
     cp.innerHTML='';cp.append(h('option',{value:'',text:'Escolher canal…'}));
-    for(let k=0;k<A;k++)if(k!==c.i)cp.append(h('option',{value:String(k),text:'Canal '+(k+1)}));
+    for(let k=0;k<A;k++)if(k!==c.i)cp.append(h('option',{value:String(k),text:chLabel(k)}));
     if(A>1)cp.append(h('option',{value:'all',text:'Todos os outros canais'}));
   });
   chSel.innerHTML='';
-  for(let q=0;q<A;q++)chSel.append(h('option',{value:q,text:'Canal '+(q+1)}));
+  for(let q=0;q<A;q++)chSel.append(h('option',{value:q,text:chLabel(q)}));
   Array.from(goSel.options).filter(o=>/^c\d$/.test(o.value)).forEach(o=>o.remove());
   const ref=goSel.querySelector('option[value="files"]');
-  for(let q=0;q<A;q++)goSel.insertBefore(h('option',{value:'c'+q,text:'Canal '+(q+1)}),ref);
+  for(let q=0;q<A;q++)goSel.insertBefore(h('option',{value:'c'+q,text:chLabel(q)}),ref);
   applyView();recLabel();
   $('chInfo').textContent=A===0?'Mesa vazia.':A+(A===1?' canal':' canais')+' de '+N;
-  $('btnAddCh').setAttribute('aria-label',A<N?'Adicionar canal. O próximo será o Canal '+(A+1)+'.':'Adicionar canal. Limite de '+N+' canais atingido.');
-  $('btnRmCh').setAttribute('aria-label',A>0?'Remover canal. O último é o Canal '+A+'.':'Remover canal. Não há canais.');
+  $('btnAddCh').setAttribute('aria-label',A<N?'Adicionar canal. O próximo será o '+chans[A].who+'.':'Adicionar canal. Limite de '+N+' canais atingido.');
+  $('btnRmCh').setAttribute('aria-label',A>0?'Remover canal. O último é o '+chans[A-1].who+'.':'Remover canal. Não há canais.');
+}
+function updateNames(){
+  const num=o=>/^\d+$/.test(o.value);
+  CHSEL.forEach(({el})=>Array.from(el.options).forEach(o=>{if(num(o))o.text=chLabel(+o.value)}));
+  chans.forEach(c=>{if(c.cpSel)Array.from(c.cpSel.options).forEach(o=>{if(num(o))o.text=chLabel(+o.value)})});
+  Array.from(chSel.options).forEach(o=>{o.text=chLabel(+o.value)});
+  Array.from(goSel.options).forEach(o=>{if(/^c\d$/.test(o.value))o.text=chLabel(+o.value[1])});
+  if(A<N)$('btnAddCh').setAttribute('aria-label','Adicionar canal. O próximo será o '+chans[A].who+'.');
+  if(A>0)$('btnRmCh').setAttribute('aria-label','Remover canal. O último é o '+chans[A-1].who+'.');
+  recLabel();
+}
+function setChName(c,nm,silent){
+  nm=String(nm||'').replace(/\s+/g,' ').trim().slice(0,30);
+  const old=c.who;
+  c.custom=nm;c.who=nm||'Canal '+(c.i+1);
+  c.no=nm?'em '+nm:'no '+c.who;c.de=nm?'de '+nm:'do '+c.who;
+  c.setWho(c.who);
+  if(c.nameInp&&c.nameInp.value!==nm)c.nameInp.value=nm;
+  if(old===c.who)return;
+  c.titleTxt.textContent=c.who;
+  const els=new Set();
+  [c.sec,c.tb,c.fxMenu].concat(c.menuNodes).forEach(r=>{
+    if(!r)return;els.add(r);r.querySelectorAll('[aria-label]').forEach(e=>els.add(e));
+    r.querySelectorAll('label').forEach(l=>{if(l.textContent.indexOf('Preset de efeitos')===0)l.textContent='Preset de efeitos '+c.de});
+  });
+  els.forEach(e=>{
+    const a=e.getAttribute('aria-label');
+    if(a&&a.indexOf(old)===0)e.setAttribute('aria-label',c.who+a.slice(old.length));
+  });
+  if(menuOpen&&menuCh===c.i)menuTitle.textContent=c.who+', ajustes e efeitos';
+  if(edOpen&&edSelW&&+edSelW.sel.value===c.i)$('edTitle').textContent='Editar áudio, '+c.who;
+  if(silent)return;
+  updateNames();dirty=true;
+  say(nm?'Nome do canal definido: '+nm+'.':'Nome removido. O canal voltou a ser '+c.who+'.');
 }
 function setCount(n,silent){
   n=Math.max(0,Math.min(N,n));
@@ -2934,9 +2977,9 @@ $('btnRmCh').addEventListener('click',()=>{
   if(R.state!=='idle'){say('Pare a gravação antes de mudar os canais.');return}
   if(A===0){say('Não há canais para remover.');return}
   const c=chans[A-1];
-  if((c.buffer||c.armed)&&!confirmTwice('rmch'+A,'O '+c.who+' tem áudio ou está armado. Remover apaga o que há nele. Aperte Remover canal de novo para confirmar.'))return;
-  setCount(A-1,true);dirty=true;
-  say(c.who+' removido. A mesa tem '+A+(A===1?' canal.':' canais.')+(A===0?' Use Adicionar canal para começar.':''));
+  if((c.buffer||c.armed)&&!confirmTwice('rmch'+A,c.who+' tem áudio ou está armado. Remover apaga o que há nele. Aperte Remover canal de novo para confirmar.'))return;
+  const oldWho=c.who;setCount(A-1,true);dirty=true;
+  say(oldWho+' removido. A mesa tem '+A+(A===1?' canal.':' canais.')+(A===0?' Use Adicionar canal para começar.':''));
 });
 
 /* teclado */
