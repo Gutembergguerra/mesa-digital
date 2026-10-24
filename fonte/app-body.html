@@ -132,6 +132,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 .grid.view-lado .card{flex:0 0 min(86vw,320px);scroll-snap-align:start}
 .grid.view-um{grid-template-columns:minmax(0,520px)}
 .more-btn{display:none}
+.ed-btn{display:inline-flex;align-items:center;justify-content:center}
 /* Mesa: faders na vertical, seis tiras lado a lado */
 .grid.view-mesa{display:flex;overflow-x:auto;gap:12px;padding-bottom:12px;align-items:stretch}
 .grid.view-mesa .card{flex:0 0 188px;padding:10px;gap:10px}
@@ -166,7 +167,7 @@ details.fx>div{display:flex;flex-direction:column;gap:10px;padding:4px 0 12px}
 .grid.view-faixas{grid-template-columns:1fr;gap:8px}
 .grid.view-faixas .tbar{display:flex;flex-wrap:wrap;gap:6px}
 .tbar .btn{min-height:44px;padding:0 10px}
-.grid.view-faixas .card>.filerow,.grid.view-faixas .card>.ctl,.grid.view-faixas .card>details.fx,.grid.view-faixas .card>.pair,.grid.view-faixas .card>.more-btn{display:none}
+.grid.view-faixas .card>.filerow,.grid.view-faixas .card>.ctl,.grid.view-faixas .card>details.fx,.grid.view-faixas .card>.pair,.grid.view-faixas .card>.more-btn,.grid.view-faixas .card>.ed-btn{display:none}
 .grid.view-faixas .card>.pane-show{display:flex!important;flex-direction:column}
 .grid.view-faixas .card>details.pane-show{display:block!important}
 .grid.view-faixas .card>details.pane-show>summary{display:none}
@@ -329,7 +330,7 @@ header .field label{font-size:.85rem}
       <section class="panel" id="projSec" aria-labelledby="h-proj" hidden></section>
       <section class="panel" id="recSec" aria-labelledby="h-rec"></section>
       <section class="panel" id="metSec" aria-labelledby="h-met"></section>
-      <section class="panel" id="edSec" aria-labelledby="h-ed"></section>
+      <section class="panel" id="edSec" aria-label="Editar áudio" hidden></section>
       <section class="panel" id="tuSec" aria-labelledby="h-tu"></section>
       <section class="panel" id="vrSec" aria-labelledby="h-vr"></section>
       <section class="master" id="masterSec" aria-labelledby="h-master"></section>
@@ -362,6 +363,17 @@ header .field label{font-size:.85rem}
       <button type="button" class="btn primary" id="projClose">Fechar</button>
     </div>
     <div id="projBody" class="menu-body" style="grid-template-columns:1fr"></div>
+  </div>
+</div>
+
+<div id="edLayer" class="menu-layer" role="dialog" aria-modal="true" aria-labelledby="edTitle" hidden>
+  <div class="menu-box proj-box">
+    <div class="menu-head">
+      <h2 id="edTitle" tabindex="-1">Editar áudio</h2>
+      <button type="button" class="btn" id="edPlay">Tocar</button>
+      <button type="button" class="btn primary" id="edClose">Concluir</button>
+    </div>
+    <div id="edBody" class="menu-body" style="grid-template-columns:1fr"></div>
   </div>
 </div>
 
@@ -449,24 +461,27 @@ header .field label{font-size:.85rem}
       <li>Para violão no Canal 1 e voz no Canal 2 ao mesmo tempo, com uma placa de duas entradas, arme os dois canais, ligue o violão na entrada 1 e a voz na entrada 2, e grave. Para gravar um depois do outro: arme o Canal 1 e grave o violão; depois desarme o 1, arme o 2 e grave a voz ouvindo o violão.</li>
     </ol>
 
-    <h3>6. Editar: cortar, copiar, colar, silenciar</h3>
+    <h3>6. Editar o áudio de um canal</h3>
     <ol>
-      <li>Abra a seção Edição e escolha o “Canal a editar”.</li>
-      <li>Leve o cursor ao ponto desejado: use o campo deslizante “Posição do cursor” (as setas movem 10 milissegundos), ou “Voltar um passo” e “Avançar um passo”, e escolha o tamanho do passo. O leitor fala a posição. “Tocar ao redor do cursor” ajuda a achar o ponto.</li>
-      <li>Com o cursor no início do trecho, ative “Marcar início aqui”. Mova o cursor ao fim e ative “Marcar fim aqui”. Ou use “Selecionar o áudio todo”, “Selecionar do cursor até o fim” ou “Selecionar do início até o cursor”. Também dá para digitar os tempos nos campos de início e fim.</li>
-      <li>“Tocar seleção” confere o trecho. “Ajustar pontos ao silêncio mais próximo” evita cortes bruscos.</li>
-      <li>Depois use Cortar, Copiar, Colar no cursor, Silenciar seleção ou Manter só a seleção.</li>
-      <li>Errou? Use Desfazer, ou Refazer. Ctrl+Z e Ctrl+Y funcionam no teclado.</li>
+      <li>No canal, ative “Editar áudio”. Abre uma tela só daquele canal. Em “Canal a editar” dá para trocar de canal sem sair. A tela tem o botão Tocar (ele fica no topo, ao lado de Concluir) e o botão “Concluir” fecha a tela. As mudanças já ficam valendo.</li>
+      <li>Escreva o tempo do início em “Início da seleção” e o do fim em “Fim da seleção”, por exemplo 12.3 ou 1:05. Ou use “Início: voltar”, “Início: avançar”, “Fim: voltar” e “Fim: avançar”, que andam o tamanho do “Passo” escolhido. Você pode também tocar, pausar no ponto e usar, dentro de “Marcar pelo cursor e mais edições”, “Marcar início aqui” e “Marcar fim aqui”.</li>
+      <li>“Ouvir trecho” confere. Depois use Cortar, Copiar ou Colar no cursor. Desfazer e Refazer ficam logo abaixo. Silenciar, manter só a seleção e ajustar ao silêncio estão em “Marcar pelo cursor e mais edições”.</li>
+      <li>“Excluir todo o áudio do canal” esvazia o canal (pede para apertar de novo), e dá para desfazer.</li>
     </ol>
-    <h3>6b. Dividir áudio</h3>
+    <h3>6b. Emendar e colocar locução sobre uma trilha</h3>
     <ol>
-      <li>Na seção Edição, escolha o canal e vá até “Dividir áudio”.</li>
-      <li>Em “Dividir”, escolha: no cursor, por tempo, em partes iguais ou por silêncio. Preencha o número pedido, se houver, e ative “Adicionar partes à lista”. O áudio do canal não muda.</li>
-      <li>Em “Partes”, escolha uma parte. Use “Ouvir parte”, dê um nome em “Nome da parte” (ao sair do campo, o nome vale).</li>
-      <li>Em “Usar as partes”, escolha o canal (ou Novo canal) e ative “Colocar parte no canal”. Ou use “Exportar parte em WAV” e “Exportar todas as partes em ZIP”.</li>
+      <li>Para emendar: toque o primeiro áudio no canal, pause no ponto onde quer emendar, ative “Editar áudio”, e use “Inserir arquivo no cursor”. Escolha o segundo arquivo: ele entra nesse ponto, e o resto do primeiro vai para depois dele. Para juntar no final, pause no fim.</li>
+      <li>Para colocar uma voz sobre uma trilha: carregue a trilha no Canal 1, toque e pause onde a voz entra, abra “Editar áudio” do Canal 2 (ou escolha o canal em “Canal a editar”) e use “Colocar arquivo a partir do cursor”. A voz começa nesse ponto e toca junto com a trilha. Depois exporte a mixagem na seção Master.</li>
+      <li>Se errar, use Desfazer.</li>
     </ol>
-    <h3>6c. Emendar áudios</h3>
-    <p>Na seção Edição, em “Emendar áudios”, escolha “Juntar o áudio do canal” e “No final do canal”, e ative “Emendar”. Para inserir no meio, use Copiar e “Colar no cursor”. O canal de origem fica como está. “Desfazer a emenda” volta atrás.</p>
+    <h3>6c. Separar um áudio em várias faixas (músicas)</h3>
+    <ol>
+      <li>Abra “Editar áudio” do canal e, dentro dele, “Separar em faixas”.</li>
+      <li>Toque o áudio com o botão Tocar. Quando chegar ao fim de uma música, ative “Marcar divisão aqui”. “Voltar 5 s” e “Avançar 5 s” ajudam a achar o ponto. Se tocar enquanto marca, o app desconta o tempo de reação ajustado em “Compensação ao marcar tocando”.</li>
+      <li>Em “Divisões”, escolha uma e use “Ouvir antes e depois da divisão”. Se precisar, use “Divisão: voltar” e “Divisão: avançar”, “Ajustar divisão ao silêncio” ou “Remover divisão”.</li>
+      <li>Para achar as divisões sozinho nos silêncios, escreva o tempo mínimo e ative “Achar divisões por silêncio”. Depois confira cada uma.</li>
+      <li>Ative “Salvar faixas em ZIP”. Sai um arquivo com Faixa 01, Faixa 02 e assim por diante, em WAV. Áudios muito longos podem não caber na memória de aparelhos fracos.</li>
+    </ol>
 
     <h3>7. Afinação de voz</h3>
     <p>Na seção Afinação de voz, escolha o canal da voz, a escala, o tom, a velocidade e o trecho, e ative “Afinar a voz”. Ela não diz as notas. Funciona melhor com uma voz sozinha. Ouça o resultado e use Desfazer na seção Edição se não gostar.</p>
@@ -490,11 +505,11 @@ header .field label{font-size:.85rem}
     <ul>
       <li>Espaço toca e pausa. Números de 1 a 6 vão ao canal.</li>
       <li>M e S ligam mudo e solo do canal em foco. X marca ponto de seleção.</li>
-      <li>Esc fecha o menu do canal, Projetos e arquivos, ou estas instruções.</li>
+      <li>Esc fecha o menu do canal, Editar áudio, Projetos e arquivos, ou estas instruções.</li>
     </ul>
 
     <h3>Novidades</h3>
-    <p>Versão 1.1 (teste): mesa que abre vazia, com os botões Adicionar canal e Remover canal; menu Projetos reorganizado, com Novo projeto; edição refeita, com posição do cursor deslizante, seleção rápida, Dividir áudio (com lista de partes, nomes, WAV e ZIP) e Emendar áudios.</p>
+    <p>Versão 1.1 (teste): mesa que abre vazia, com Adicionar canal e Remover canal; menu Projetos reorganizado, com Novo projeto; botão Editar áudio em cada canal, com tela própria; Inserir arquivo no cursor e Colocar arquivo a partir do cursor, para emendar e para locução sobre trilha; Separar em faixas, com divisões marcadas ouvindo e arquivo ZIP.</p>
     <p>Versão 1.0: primeira versão publicada, com seis canais e Master, gravação em um ou vários canais, efeitos e presets por canal, edição, afinação de voz, reverb de voz, projetos e exportação em WAV e MP3.</p>
     <p class="hint">SL-Mix: Áudio Acessível. Versão 1.1. © 2026 Gutenberg Guerra Lima. Todos os direitos reservados.</p>
     <p><button type="button" class="btn primary" id="helpClose2">Fechar instruções</button></p>
@@ -1283,7 +1298,7 @@ function clearChannel(c){
   if(playing)pause(false);
   commit(c,null,'áudio removido');
   c.edited=false;refreshLabel(c);
-  say(c.who+' esvaziado. Dá para desfazer na seção Edição.');
+  say(c.who+' esvaziado. Dá para desfazer na tela Editar áudio.');
 }
 function genDemo(){
   ensureCtx();
@@ -1668,7 +1683,9 @@ function buildBar(c,panes,moreBtn){
   });
   const mais=btn('Mais',()=>openMenu(c.i,mais),'btn tb-open',{'aria-label':who+', mais ajustes: presets, copiar efeitos, restaurar','aria-haspopup':'dialog'});
   c.openers.mais=mais;
-  c.tb.append(c.openers.vol,c.openers.pan,c.openers.fx,c.openers.prs,c.openers.file,mais);
+  const edt=btn('Editar',()=>openEd(c.i,edt),'btn tb-open',{'aria-label':who+', editar áudio','aria-haspopup':'dialog','aria-expanded':'false'});
+  c.openers.ed=edt;
+  c.tb.append(c.openers.vol,c.openers.pan,c.openers.fx,c.openers.prs,c.openers.file,edt,mais);
   const fm=h('div',{class:'fxmenu',role:'group','aria-label':who+', escolher efeito'});
   c.fxBtns={};
   FXLIST.forEach(([k,label])=>{
@@ -1894,13 +1911,15 @@ function buildChannel(i){
   vol.wrap.classList.add('ctl-vol');pan.wrap.classList.add('ctl-pan');
   const more=btn('Ajustes e efeitos',()=>openMenu(c.i,more),'btn more-btn',{'aria-label':who+', ajustes e efeitos','aria-describedby':'sm'+p});
   c.moreBtn=more;
+  const edb=btn('Editar áudio',()=>openEd(c.i,edb),'btn ed-btn',{'aria-label':who+', editar áudio','aria-haspopup':'dialog','aria-expanded':'false'});
+  c.edBtn=edb;
   const filerow=h('div',{class:'filerow'},pick,c.fileInput,c.fileEl,rm);
   c.extra=buildExtras(c);
   c.extra.hidden=true;
   c.sec=h('section',{class:'card','aria-labelledby':'h'+p,'data-ch':i},
     c.title,c.sumEl,
     filerow,
-    vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo,arm),more,
+    vol.wrap,pan.wrap,h('div',{class:'pair'},mute,solo,arm),more,edb,
     preBox,eqBox,dBox,cBox,c.extra);
   c.menuNodes=[filerow,pan.wrap,preBox,eqBox,dBox,cBox,c.extra];
   c.pairEl=c.sec.querySelector('.pair');c.sec.hidden=true;
@@ -1968,8 +1987,8 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
 /* painel Edição */
 (function(){
   const sec=$('edSec'),who='Edição';
-  sec.append(h('h2',{id:'h-ed',tabindex:'-1',text:'Edição'}));
-  edSelW=selectField('edCh','Canal',chOpts(),'0',(v,t)=>say('Editando '+t));regChSel(edSelW.sel);
+  const cuts=[];let cutsCh=-1;
+  edSelW=selectField('edCh','Canal',chOpts(),'0',(v,t)=>{$('edTitle').textContent='Editar áudio, '+t;if(cutsCh!==+v){cuts.length=0;cutsCh=+v;cutRender(0)}say('Editando '+t)});regChSel(edSelW.sel);
   edCur=h('output',{class:'tstat','aria-hidden':'true',text:'0:00.000'});
   stepW=selectField('edStep','Passo',[['1','1 segundo'],['0.1','100 milissegundos'],['0.01','10 milissegundos']],'0.1',(v,t)=>say('Passo de '+t));
   reactS=slider({id:'edReact',who,label:'Compensação ao marcar tocando',min:0,max:500,step:10,btn:50,value:150,spoken:sMs,short:vMs,onChange:()=>{}});
@@ -1998,238 +2017,172 @@ for(let i=0;i<N;i++)grid.append(buildChannel(i));
     if(b2-a<.005){say('Não há trecho nessa região. Mova o cursor.');return}
     setSel(a,b2);say(msg+' Duração '+sec1(b2-a)+' segundos.')};
 
-  const col1=h('div',{class:'pcol'},
-    edSelW,
-    posW,
-    stepW,
-    h('div',{class:'row'},
-      btn('Voltar um passo',()=>seek(-stepSec())),
-      btn('Avançar um passo',()=>seek(stepSec()))),
-    h('div',{class:'row'},
-      btn('Ir ao início',()=>goTo(0)),
-      btn('Ir ao fim',()=>goTo(dur()))),
-    btn('Tocar ao redor do cursor (2 s antes e depois)',()=>{const p=pos();playRange(p-2,p+2,p,'Tocando ao redor do cursor')}),
-    btn('Voltar 2 s e tocar',()=>{const p=pos();playRange(p-2,dur(),p,'Voltando 2 segundos')}));
-  const col2=h('div',{class:'pcol'},
-    h('div',{class:'row'},
-      btn('Marcar início aqui',markStart,'btn primary'),
-      btn('Marcar fim aqui',markEnd,'btn primary')),
-    btn('Marcar ponto: início, depois fim',markNext),
-    reactS.wrap,
-    wA,wB,
-    btn('Selecionar o áudio todo',()=>selTo(null,null,'Áudio todo selecionado.')),
-    btn('Selecionar do cursor até o fim',()=>selTo(pos(),null,'Selecionado do cursor até o fim.')),
-    btn('Selecionar do início até o cursor',()=>selTo(0,pos(),'Selecionado do início até o cursor.')),
-    h('div',{class:'row'},
-      btn('Dizer seleção',()=>say(selSpoken()),'btn quiet'),
-      btn('Limpar seleção',()=>{setSel(null,null);say('Seleção limpa')},'btn quiet')),
-    h('div',{class:'row'},
-      btn('Cursor no início da seleção',()=>{if(sel.a==null)say('Início não marcado.');else goTo(sel.a)}),
-      btn('Cursor no fim da seleção',()=>{if(sel.b==null)say('Fim não marcado.');else goTo(sel.b)})),
-    btn('Ajustar pontos ao silêncio mais próximo',doSnap),
-    btn('Tocar seleção',()=>{if(needSel())playRange(sel.a,sel.b,sel.a,'Tocando a seleção')}));
-  const col3=h('div',{class:'pcol'},
-    h('div',{class:'row'},btn('Cortar',doCut,'btn primary'),btn('Copiar',doCopy),btn('Colar no cursor',doPaste)),
-    btn('Silenciar seleção',doSilence),
-    btn('Manter só a seleção',doTrim),
-    h('div',{class:'row'},btn('Adiantar 10 ms',()=>doShift(-10)),btn('Atrasar 10 ms',()=>doShift(10))),
-    h('div',{class:'row'},
-      btn('Desfazer',()=>undo(chans[+edSelW.sel.value]),'btn primary'),
-      btn('Refazer',()=>redo(chans[+edSelW.sel.value]))));
-
-  /* ---- Dividir áudio ---- */
-  const numField=(id,label,val,min,max,step)=>{
-    const i=h('input',{type:'number',id,'data-nav':'',min,max,step,inputmode:'decimal',value:String(val)});
-    const lab=h('label',{for:id,text:label});
-    const w=h('div',{class:'field'},lab,i);w.inp=i;w.lab=lab;return w;
-  };
-  const checkField=(id,label)=>{
-    const i=h('input',{type:'checkbox',id,'data-nav':''});
-    const w=h('div',{class:'field check'},h('label',{for:id},i,label));w.inp=i;return w;
-  };
-  const safeName=n=>String(n||'parte').replace(/[\\/:*?"<>|]/g,'_').trim()||'parte';
-  const parts=[];
-  const DV={
-    cursor:{txt:'Divide o áudio do canal em duas partes: uma antes e outra depois do cursor.'},
-    tempo:{lab:'Segundos de cada parte',def:30,min:.1,max:3600,step:.1,txt:'Corta o áudio em partes de mesmo tamanho em segundos. A última pode ser menor.'},
-    iguais:{lab:'Número de partes (de 2 a 50)',def:2,min:2,max:50,step:1,txt:'Divide o áudio em partes de mesma duração.'},
-    silencio:{lab:'Silêncio mínimo para cortar, em segundos',def:1,min:.1,max:30,step:.1,txt:'Corta no meio de cada pausa em silêncio que durar pelo menos o tempo informado.'}
-  };
-  const dvMode=selectField('dvMode','Dividir',[['cursor','No cursor'],['tempo','Por tempo'],['iguais','Em partes iguais'],['silencio','Por silêncio']],'cursor',(v,t)=>{dvUpdate();say('Como dividir: '+t+'. '+DV[v].txt)});
-  dvMode.sel.setAttribute('data-nav','');
-  const dvArgW=numField('dvArg','',30,.1,3600,.1);
-  function dvUpdate(){
-    const m=dvMode.sel.value,d=DV[m];
-    dvArgW.hidden=!d.lab;
-    if(d.lab){dvArgW.lab.textContent=d.lab;dvArgW.inp.min=d.min;dvArgW.inp.max=d.max;dvArgW.inp.step=d.step;dvArgW.inp.value=String(d.def)}
-  }
-  const dvListEl=h('select',{id:'dvList','data-nav':''});
-  const dvListW=h('div',{class:'field'},h('label',{for:'dvList',text:'Partes'}),dvListEl);
-  const dvNameW=textField('dvName','Nome da parte',v=>dvRename(v));
-  dvNameW.inp.setAttribute('data-nav','');
-  const dvTo=regChSel(selectField('dvTo','Colocar em',[['new','Novo canal']],'new',()=>{}).sel,'Novo canal');
-  const dvToW=dvTo.parentNode;
-  dvTo.setAttribute('data-nav','');
-    const curPart=()=>parts.length?parts[dvListEl.selectedIndex]:null;
-  const pdur=p=>(p.i1-p.i0)/p.buf.sampleRate;
-  function dvRender(keep){
-    const prev=keep!=null?keep:dvListEl.selectedIndex;
-    dvListEl.innerHTML='';
-    if(!parts.length)dvListEl.append(h('option',{value:'',text:'Nenhuma parte na lista'}));
-    parts.forEach((p,k)=>dvListEl.append(h('option',{value:String(k),text:'Parte '+(k+1)+' de '+parts.length+': '+p.name+', '+sec1(pdur(p))+' segundos, de '+fmtT(p.i0/p.buf.sampleRate)+' a '+fmtT(p.i1/p.buf.sampleRate)})));
-    if(parts.length)dvListEl.selectedIndex=Math.max(0,Math.min(parts.length-1,prev<0?0:prev));
-    dvNameW.inp.value=curPart()?curPart().name:'';
-  }
-  dvListEl.addEventListener('change',()=>{dvNameW.inp.value=curPart()?curPart().name:''});
-  function dvRun(){
+  function nudge(which,dir){
     const c=editCh();if(!c)return;
-    const b=c.buffer,sr=b.sampleRate,total=b.length,mode=dvMode.sel.value;
-    let segs=[];
-    if(mode==='cursor'){
-      const p=idx(pos(),b);
-      if(p<=0||p>=total){say('O cursor precisa estar no meio do áudio, nem no início nem no fim. Mova o cursor primeiro.');return}
-      segs=pSegments(total,[p]);
-    }else if(mode==='tempo'){
-      const v=+dvArgW.inp.value;
-      if(!(v>=.1)){say('Digite um número de segundos maior que zero.');return}
-      segs=pSegments(total,pEvery(total,Math.round(v*sr)));
-    }else if(mode==='iguais'){
-      const v=Math.round(+dvArgW.inp.value);
-      if(!(v>=2&&v<=50)){say('Digite um número de partes entre 2 e 50.');return}
-      segs=pEqual(total,v);segs=pSegments(total,segs);
-    }else{
-      const v=+dvArgW.inp.value;
-      if(!(v>=.1)){say('Digite o silêncio mínimo em segundos.');return}
-      const D=dataOf(b),mono=D.length>1?D[0].map((x,i)=>(x+D[1][i])/2):D[0];
-      const pts=pFindSilences(mono,sr,v,-45);
-      if(!pts.length){say('Não encontrei silêncio de pelo menos '+String(v).replace('.',',')+' segundo. Tente um tempo menor.');return}
-      segs=pSegments(total,pts);
-    }
-    if(!segs.length){say('Não há o que dividir.');return}
-    if(parts.length+segs.length>80){say('A lista aceita até 80 partes. Remova algumas antes.');return}
-    const first=parts.length;
-    segs.forEach(([x,y])=>parts.push({name:'Parte '+(parts.length+1),buf:b,i0:x,i1:y}));
-    dvRender(first);
-    say(segs.length+(segs.length===1?' parte adicionada':' partes adicionadas')+' à lista, a partir da parte '+(first+1)+'. A lista tem '+parts.length+'. O áudio do canal não foi alterado. Escolha uma parte na lista para ouvir, dar nome, exportar ou colocar em um canal.');
+    let base=sel[which];if(base==null)base=pos();
+    const t=Math.max(0,Math.min(c.buffer.duration,Math.round((base+dir*stepSec())*1000)/1000));
+    sel[which]=t;seek(t-pos(),true);
+    afterMark((which==='a'?'Início':'Fim')+' em '+spokenPos(t)+'.');
   }
-  function dvRename(v){
-    const p=curPart();if(!p){say('A lista está vazia.');return}
-    v=String(v).trim().slice(0,60);if(!v){say('Digite um nome para a parte.');dvNameW.inp.value=p.name;return}
-    p.name=v;dvRender(dvListEl.selectedIndex);say('Parte renomeada para '+v+'.');
+  const more=h('details',{class:'fx'},h('summary',{text:'Marcar pelo cursor e mais edições'}),
+    h('div',{class:'pcol'},
+      posW,
+      h('div',{class:'row'},btn('Ir ao início',()=>goTo(0)),btn('Ir ao fim',()=>goTo(dur()))),
+      h('div',{class:'row'},btn('Marcar início aqui',markStart,'btn primary'),btn('Marcar fim aqui',markEnd,'btn primary')),
+      reactS.wrap,
+      btn('Selecionar o áudio todo',()=>selTo(null,null,'Áudio todo selecionado.')),
+      btn('Selecionar do cursor até o fim',()=>selTo(pos(),null,'Selecionado do cursor até o fim.')),
+      btn('Selecionar do início até o cursor',()=>selTo(0,pos(),'Selecionado do início até o cursor.')),
+      btn('Tocar ao redor do cursor (2 s antes e depois)',()=>{const p=pos();playRange(p-2,p+2,p,'Tocando ao redor do cursor')}),
+      btn('Ajustar pontos ao silêncio mais próximo',doSnap),
+      btn('Silenciar seleção',doSilence),
+      btn('Manter só a seleção',doTrim),
+      h('div',{class:'row'},btn('Adiantar 10 ms',()=>doShift(-10)),btn('Atrasar 10 ms',()=>doShift(10))),
+      h('div',{class:'row'},
+        btn('Dizer seleção',()=>say(selSpoken()),'btn quiet'),
+        btn('Limpar seleção',()=>{setSel(null,null);say('Seleção limpa')},'btn quiet'))));
+
+  const safeName=n=>String(n||'parte').replace(/[\\/:*?"<>|]/g,'_').trim()||'parte';
+  const numField=(id,label,val,min,max,step)=>{
+    const i=h('input',{type:'number',id,'data-nav':'',min,max,step,inputmode:'decimal',value:String(val),'aria-label':label});
+    const lab=h('label',{for:id,'aria-hidden':'true',text:label});
+    const w=h('div',{class:'field'},lab,i);w.inp=i;return w;
+  };
+  /* ---- inserir ou colocar arquivo no cursor ---- */
+  const fileIn=h('input',{type:'file',id:'edFileIn',accept:'audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus',hidden:true,tabindex:'-1'});
+  let fileMode='insert';
+  async function placeFile(f){
+    const c=editCh(true);if(!c||!f)return;
+    ensureCtx();if(playing)pause(false);pvStop();
+    say('Abrindo '+f.name+'. Aguarde.');
+    try{
+      const nb=await ctx.decodeAudioData(await f.arrayBuffer());
+      const sr=ctx.sampleRate,D=dataOf(nb),B=c.buffer?dataOf(c.buffer):null,at=Math.round(pos()*sr),p0=pos();
+      let out;
+      if(fileMode==='insert')out=pPaste(B,Math.min(at,B?B[0].length:0),D,sr);
+      else{
+        out=[];const nch=Math.max(B?B.length:1,D.length);
+        for(let k=0;k<nch;k++)out.push(pSplice(B?[B[Math.min(k,B.length-1)]]:null,at,D[Math.min(k,D.length-1)],sr)[0]);
+      }
+      commit(c,bufFromData(out,sr),(fileMode==='insert'?'arquivo inserido em ':'arquivo colocado em ')+sec1(p0)+' segundos');
+      if(!c.name)c.name=f.name;refreshLabel(c);
+      say(f.name+(fileMode==='insert'?' inserido no ':' colocado no ')+c.who+', a partir de '+spokenPos(p0)+'. O '+c.who+' agora tem '+sec1(c.buffer.duration)+' segundos. Para desfazer, use Desfazer.');
+    }catch(e){say('Não foi possível abrir o arquivo. Tente WAV, MP3 ou M4A.')}
   }
-  function dvListen(){
-    const p=curPart();if(!p){say('A lista está vazia. Adicione partes primeiro.');return}
-    ensureCtx();if(ctx.state==='suspended')ctx.resume();
-    if(playing)pause(false);pvStop();
-    const s2=ctx.createBufferSource();s2.buffer=p.buf;s2.connect(ctx.destination);
-    const sr=p.buf.sampleRate;s2.start(0,p.i0/sr,(p.i1-p.i0)/sr);pv=s2;
-    s2.onended=()=>{if(pv===s2){pv=null;say('Fim da parte.')}};
-    say('Ouvindo '+p.name+', '+sec1(pdur(p))+' segundos.');
+  fileIn.addEventListener('change',()=>{const f=fileIn.files[0];fileIn.value='';placeFile(f)});
+  const askFile=m=>{if(!editCh(true))return;fileMode=m;fileIn.click()};
+
+  /* ---- separar em faixas ---- */
+  const cutList=h('select',{id:'cutList','data-nav':'','aria-label':'Divisões'});
+  const cutW=h('div',{class:'field'},h('label',{for:'cutList','aria-hidden':'true',text:'Divisões'}),cutList);
+  const cutCur=()=>cuts.length?cutList.selectedIndex:-1;
+  function cutRender(keep){
+    cutList.innerHTML='';
+    if(!cuts.length)cutList.append(h('option',{value:'',text:'Nenhuma divisão marcada'}));
+    cuts.forEach((t,k)=>cutList.append(h('option',{value:String(k),text:'Divisão '+(k+1)+' de '+cuts.length+', em '+fmtT(t)+', entre a faixa '+(k+1)+' e a faixa '+(k+2)})));
+    if(cuts.length)cutList.selectedIndex=Math.max(0,Math.min(cuts.length-1,keep||0));
   }
-  function dvPut(){
-    const p=curPart();if(!p){say('A lista está vazia. Adicione partes primeiro.');return}
-    if(R.state!=='idle'){say('Pare a gravação primeiro.');return}
-    ensureCtx();
-    const v=dvTo.value,how='replace';
-    let k;
-    if(v==='new'){if(A>=N){say('A mesa já tem '+N+' canais. Escolha um canal existente.');return}k=A}else k=+v;
-    const t=chans[k];
-    if(how==='replace'&&t.buffer&&!confirmTwice('dvput'+k,t.who+' já tem áudio. Aperte Colocar parte no canal de novo para substituir. Dá para desfazer.'))return;
-    if(playing)pause(false);pvStop();
-    if(k>=A)setCount(k+1,true);
-    const psr=p.buf.sampleRate,D=pTrim(dataOf(p.buf),p.i0,p.i1,psr);
-    const out=(how==='append'&&t.buffer)?pPaste(dataOf(t.buffer),t.buffer.length,D,psr):D;
-    commit(t,bufFromData(out,psr),(how==='append'?'emenda da ':'colocação da ')+p.name);
-    t.name=t.name&&how==='append'?t.name:p.name;refreshLabel(t);
-    edSelW.sel.value=String(k);
-    say(p.name+(how==='append'?' emendada no final do ':' colocada no ')+t.who+'. Ele agora tem '+sec1(t.buffer.duration)+' segundos. Para desfazer, use Desfazer nesta seção: o '+t.who+' já está escolhido em Canal a editar.');
+  function cutAdd(t,quietMsg){
+    if(cuts.some(x=>Math.abs(x-t)<.05))return false;
+    cuts.push(t);cuts.sort((x,y)=>x-y);cutRender(cuts.indexOf(t));
+    if(!quietMsg)say('Divisão '+(cuts.indexOf(t)+1)+' marcada em '+spokenPos(t)+'. Agora são '+(cuts.length+1)+' faixas.');
+    return true;
   }
-  function partWav(p){const sr=p.buf.sampleRate;return new Uint8Array(encodeWav(pTrim(dataOf(p.buf),p.i0,p.i1,sr),sr))}
-  function dvExport(){
-    const p=curPart();if(!p){say('A lista está vazia. Adicione partes primeiro.');return}
-    const f=safeName(p.name)+'.wav';
-    downloadBlob(new Blob([partWav(p)],{type:'audio/wav'}),f);
-    say('Parte exportada como '+f+'. Veja a pasta de downloads.');
+  function markCut(){
+    const c=editCh();if(!c)return;
+    const t=Math.max(0,Math.min(c.buffer.duration,markT()));
+    if(t<=.05||t>=c.buffer.duration-.05){say('Esse ponto está no começo ou no fim do áudio. Escolha um ponto no meio.');return}
+    if(!cutAdd(t))say('Já existe uma divisão aí.');
   }
-  function dvExportAll(){
-    if(!parts.length){say('A lista está vazia. Adicione partes primeiro.');return}
-    say('Preparando o arquivo ZIP. Aguarde.');
+  function cutMoveTo(i,t,msg){
+    const c=editCh();if(!c)return;
+    t=Math.max(.05,Math.min(c.buffer.duration-.05,t));
+    cuts.splice(i,1);cuts.push(t);cuts.sort((x,y)=>x-y);cutRender(cuts.indexOf(t));
+    seek(t-pos(),true);say(msg+' Divisão '+(cuts.indexOf(t)+1)+' em '+spokenPos(t)+'.');
+  }
+  const cutListen=()=>{const i=cutCur();if(i<0){say('Nenhuma divisão marcada.');return}const t=cuts[i];playRange(t-3,t+3,t,'Ouvindo 3 segundos antes e 3 depois da divisão '+(i+1))};
+  const cutNudge=d=>{const i=cutCur();if(i<0){say('Nenhuma divisão marcada.');return}cutMoveTo(i,cuts[i]+d*stepSec(),d<0?'Voltou.':'Avançou.')};
+  function cutSnap(){
+    const i=cutCur();if(i<0){say('Nenhuma divisão marcada.');return}
+    const c=editCh();if(!c)return;const b=c.buffer;
+    cutMoveTo(i,pSnap(b.getChannelData(0),idx(cuts[i],b),b.sampleRate)/b.sampleRate,'Ajustado ao silêncio mais próximo.');
+  }
+  function cutRemove(){
+    const i=cutCur();if(i<0){say('Nenhuma divisão marcada.');return}
+    cuts.splice(i,1);cutRender(i);say('Divisão removida. Agora são '+(cuts.length+1)+' faixas.');
+  }
+  function cutClear(){
+    if(!cuts.length){say('Não há divisões.');return}
+    if(cuts.length>2&&!confirmTwice('cutclr','Apagar as '+cuts.length+' divisões? Aperte de novo para confirmar.'))return;
+    cuts.length=0;cutRender(0);say('Divisões apagadas.');
+  }
+  const silW=numField('cutSil','Silêncio mínimo para achar divisões, em segundos',2,.5,30,.5);
+  function cutAuto(){
+    const c=editCh();if(!c)return;
+    const v=+silW.inp.value;if(!(v>=.5)){say('Digite o silêncio mínimo, a partir de meio segundo.');return}
+    const b=c.buffer,D=dataOf(b),mono=D.length>1?D[0].map((x,i)=>(x+D[1][i])/2):D[0];
+    const pts=pFindSilences(mono,b.sampleRate,v,-45);
+    let n=0;pts.forEach(p=>{if(cutAdd(p/b.sampleRate,true))n++});
+    say(n?n+(n===1?' divisão achada':' divisões achadas')+' por silêncio. Agora são '+(cuts.length+1)+' faixas. Escute cada uma antes de salvar.':'Não achei silêncio de pelo menos '+String(v).replace('.',',')+' segundo. Tente um tempo menor.');
+  }
+  function cutSave(){
+    const c=editCh();if(!c)return;
+    if(!cuts.length){say('Marque pelo menos uma divisão primeiro.');return}
+    const b=c.buffer,sr=b.sampleRate,segs=pSegments(b.length,cuts.map(t=>idx(t,b)));
+    say('Preparando '+segs.length+' faixas. Aguarde.');
     setTimeout(()=>{
-      const used={},files=parts.map((p,k)=>{
-        let n=String(k+1).padStart(2,'0')+' - '+safeName(p.name);
-        used[n]=(used[n]||0)+1;if(used[n]>1)n+=' ('+used[n]+')';
-        return {name:n+'.wav',data:partWav(p)};
-      });
-      downloadBlob(new Blob([makeZip(files)],{type:'application/zip'}),'partes-sl-mix.zip');
-      say(parts.length+(parts.length===1?' parte salva':' partes salvas')+' no arquivo partes-sl-mix.zip. Veja a pasta de downloads.');
+      try{
+        const D=dataOf(b),pad=segs.length>99?3:2;
+        const files=segs.map(([x,y],k)=>({name:'Faixa '+String(k+1).padStart(pad,'0')+'.wav',data:new Uint8Array(encodeWav(pTrim(D,x,y,sr),sr))}));
+        downloadBlob(new Blob([makeZip(files)],{type:'application/zip'}),safeName(c.name.replace(/\.[^.]*$/,'')||c.who)+' - faixas.zip');
+        say(segs.length+' faixas salvas em um arquivo ZIP. Veja a pasta de downloads.');
+      }catch(e){say('Não foi possível salvar as faixas. O áudio pode ser grande demais para este aparelho.')}
     },30);
   }
-  function dvRemove(){
-    const p=curPart();if(!p){say('A lista está vazia.');return}
-    const k=dvListEl.selectedIndex;parts.splice(k,1);dvRender(k);
-    say(p.name+' removida da lista. Restam '+parts.length+'.');
-  }
-  function dvClear(){
-    if(!parts.length){say('A lista já está vazia.');return}
-    if(!confirmTwice('dvclr','Limpar a lista com '+parts.length+' partes? Aperte Limpar lista de novo para confirmar.'))return;
-    parts.length=0;pvStop();dvRender(0);say('Lista limpa.');
-  }
-  const dvBlock=h('div',{class:'pgrid edblock'},
+  const splitD=h('details',{class:'fx'},h('summary',{text:'Separar em faixas'}),
     h('div',{class:'pcol'},
-      h('h3',{id:'h-dv',text:'Dividir áudio'}),
-      dvMode,dvArgW,
-      btn('Adicionar partes à lista',dvRun,'btn primary')),
-    h('div',{class:'pcol'},
-      dvListW,
-      h('div',{class:'row'},btn('Ouvir parte',dvListen),btn('Parar de ouvir',()=>{pvStop();say('Parado.')},'btn quiet')),
-      dvNameW,
-      btn('Remover parte da lista',dvRemove,'btn quiet')),
-    h('div',{class:'pcol'},
-      dvToW,
-      btn('Colocar parte no canal',dvPut),
-      btn('Exportar parte em WAV',dvExport),
-      btn('Exportar todas as partes em ZIP',dvExportAll)));
-  dvUpdate();dvRender(0);
+      h('div',{class:'row'},btn('Voltar 5 s',()=>seek(-5)),btn('Avançar 5 s',()=>seek(5))),
+      btn('Marcar divisão aqui',markCut,'btn primary'),
+      cutW,
+      btn('Ouvir antes e depois da divisão',cutListen),
+      h('div',{class:'row'},btn('Divisão: voltar',()=>cutNudge(-1),'btn',{'aria-label':'Divisão: voltar um passo'}),btn('Divisão: avançar',()=>cutNudge(1),'btn',{'aria-label':'Divisão: avançar um passo'})),
+      btn('Ajustar divisão ao silêncio',cutSnap),
+      btn('Remover divisão',cutRemove,'btn quiet'),
+      silW,
+      btn('Achar divisões por silêncio',cutAuto),
+      btn('Salvar faixas em ZIP',cutSave,'btn primary'),
+      btn('Apagar todas as divisões',cutClear,'btn quiet')));
+  cutRender(0);
 
-  /* ---- Emendar áudios ---- */
-  const emFrom=selectField('emFrom','Juntar o áudio do canal',chOpts(),'0',()=>{});regChSel(emFrom.sel);
-  const emTo=selectField('emTo','No final do canal',chOpts(),'0',()=>{});regChSel(emTo.sel);
-  [emFrom.sel,emTo.sel].forEach(e=>e.setAttribute('data-nav',''));
-  emFix=()=>{if(A>1&&emFrom.sel.value===emTo.sel.value)emFrom.sel.value=emTo.sel.value==='0'?'1':'0'};
-  function doJoin(){
-    if(A<2){say('Para emendar são precisos dois canais. Use Adicionar canal e coloque um áudio em cada um.');return}
-    const a=chans[+emFrom.sel.value],b=chans[+emTo.sel.value];
-    if(a===b){say('Escolha dois canais diferentes: o de origem e o de destino.');return}
-    if(!a.buffer){say(a.who+' está vazio. Não há áudio para juntar.');return}
-    if(R.state!=='idle'){say('Pare a gravação primeiro.');return}
-    ensureCtx();if(playing)pause(false);pvStop();
-    const sr=a.buffer.sampleRate;
-    let clipD=dataOf(a.buffer);
-    const at=b.buffer?b.buffer.length:0;
-    const res=pPaste(b.buffer?dataOf(b.buffer):null,at,clipD,sr);
-    commit(b,bufFromData(res,sr),'emenda do '+a.who);
-    if(!b.name)b.name=a.name;refreshLabel(b);
-    edSelW.sel.value=String(b.i);
-    offset=at/sr;showTime();
-    say('Emendado. O áudio do '+a.who+', com '+sec1(a.buffer.duration)+' segundos, foi colocado no '+b.who+', a partir de '+spokenPos(at/sr)+'. O '+b.who+' agora tem '+sec1(b.buffer.duration)+' segundos. Para desfazer, use Desfazer a emenda.');
-  }
-  const emBlock=h('div',{class:'pcol edblock'},
-    h('h3',{id:'h-em',text:'Emendar áudios'}),
-    emFrom,emTo,
-    h('div',{class:'row'},btn('Emendar',doJoin,'btn primary'),btn('Desfazer a emenda',()=>undo(chans[+emTo.sel.value]),'btn quiet')));
+  const main=h('div',{class:'pcol'},
+    edSelW,
+    wA,
+    h('div',{class:'row'},btn('Início: voltar',()=>nudge('a',-1),'btn',{'aria-label':'Início: voltar um passo'}),btn('Início: avançar',()=>nudge('a',1),'btn',{'aria-label':'Início: avançar um passo'})),
+    wB,
+    h('div',{class:'row'},btn('Fim: voltar',()=>nudge('b',-1),'btn',{'aria-label':'Fim: voltar um passo'}),btn('Fim: avançar',()=>nudge('b',1),'btn',{'aria-label':'Fim: avançar um passo'})),
+    stepW,
+    btn('Ouvir trecho',()=>{if(needSel())playRange(sel.a,sel.b,sel.a,'Tocando o trecho')}),
+    h('div',{class:'row'},btn('Cortar',doCut,'btn primary'),btn('Copiar',doCopy),btn('Colar no cursor',doPaste)),
+    h('div',{class:'row'},
+      btn('Desfazer',()=>undo(chans[+edSelW.sel.value])),
+      btn('Refazer',()=>redo(chans[+edSelW.sel.value]))),
+    btn('Inserir arquivo no cursor',()=>askFile('insert')),
+    btn('Colocar arquivo a partir do cursor',()=>askFile('place')),
+    btn('Excluir todo o áudio do canal',()=>{
+      const c=editCh();if(!c)return;
+      if(!confirmTwice('edrm'+c.i,'Apagar todo o áudio do '+c.who+'? Aperte de novo para confirmar. Dá para desfazer.'))return;
+      clearChannel(c);setSel(null,null);
+    },'btn quiet'),
+    splitD,more);
 
-  sec.append(h('div',{class:'pgrid'},col1,col2,col3),dvBlock,emBlock);
+  sec.append(main,fileIn);
   /* o rótulo visível fica escondido do leitor: o nome completo é falado só dentro do campo */
-  const QN={edCh:'Canal a editar',edStep:'Tamanho do passo do cursor',edA:'Início da seleção, em minutos, segundos e milésimos',edB:'Fim da seleção, em minutos, segundos e milésimos',edPos:'Posição do cursor, as setas movem 10 milissegundos',dvMode:'Como dividir',dvList:'Partes da lista',dvName:'Nome da parte selecionada',dvTo:'Colocar a parte em',emFrom:'Juntar o áudio do canal',emTo:'No final do canal'};
+  const QN={edCh:'Canal a editar',edStep:'Tamanho do passo do cursor',edA:'Início da seleção, em minutos, segundos e milésimos',edB:'Fim da seleção, em minutos, segundos e milésimos',edPos:'Posição do cursor, as setas movem 10 milissegundos'};
   Object.keys(QN).forEach(id=>{
     const el=$(id),lb=sec.querySelector('label[for="'+id+'"]');
     if(el)el.setAttribute('aria-label',QN[id]);
     if(lb)lb.setAttribute('aria-hidden','true');
   });
-  const dvArgLab=dvArgW.lab,dvArgIn=dvArgW.inp;
-  dvArgLab.setAttribute('aria-hidden','true');
-  const dvArgName=()=>dvArgIn.setAttribute('aria-label',dvArgLab.textContent);
-  dvArgName();dvMode.sel.addEventListener('change',dvArgName);
 })();
 
 /* painel Master */
@@ -2708,11 +2661,12 @@ function makeAcc(sec,group){
   });
   accs.push(o);return o;
 }
-['recSec','metSec','edSec','tuSec','vrSec','masterSec'].forEach(id=>makeAcc($(id),'R'));
+['recSec','metSec','tuSec','vrSec','masterSec'].forEach(id=>makeAcc($(id),'R'));
 const SECNAME={files:['fileSec','Arquivos e ajuda'],proj:['projSec','Projetos'],rec:['recSec','Gravação'],met:['metSec','Metrônomo'],ed:['edSec','Edição'],tu:['tuSec','Afinação de voz'],vr:['vrSec','Reverb de voz'],master:['masterSec','Master']};
 function goSection(id){
   if(menuOpen)closeMenu(true);
   if(id==='proj'||id==='files'){openProj();return}
+  if(id==='ed'){if(!A){say('A mesa está sem canais. Use Adicionar canal primeiro.');return}openEd(Math.min(+edSelW.sel.value||0,A-1),null);return}
   const x=SECNAME[id];if(!x)return;
   const a=accs.find(q=>q.sec.id===x[0]);
   accs.forEach(q=>{if(q!==a)q.set(false)});
@@ -2823,6 +2777,34 @@ function closeProj(){
 }
 $('btnProj').addEventListener('click',openProj);
 $('projClose').addEventListener('click',closeProj);
+/* editar áudio */
+let edOpen=false,edOpener=null;
+const edLayer=$('edLayer'),edBody=$('edBody');
+function openEd(k,opener){
+  if(edOpen||menuOpen||k<0||k>=A)return;
+  if(R.state!=='idle'){say('Pare a gravação antes de editar.');return}
+  edOpen=true;edOpener=opener||null;pushLayer('ed',()=>closeEd());
+  const was=quiet;quiet=true;edSelW.sel.value=String(k);edSelW.sel.dispatchEvent(new Event('change'));quiet=was;
+  const x=$('edSec');x.hidden=false;edBody.append(x);
+  edLayer.hidden=false;mainEl.inert=true;document.body.classList.add('menu-open');
+  if(edOpener)edOpener.setAttribute('aria-expanded','true');
+  edLayer.scrollTop=0;$('edTitle').focus();
+  say('Editar áudio, '+chans[k].who+'. Use Concluir quando terminar.');
+}
+function closeEd(){
+  if(!edOpen)return;
+  dropLayer('ed');pvStop();
+  edOpen=false;
+  const x=$('edSec');x.hidden=true;colR.prepend(x);
+  edLayer.hidden=true;mainEl.inert=false;document.body.classList.remove('menu-open');
+  const k=+edSelW.sel.value,c=chans[k];
+  if(edOpener)edOpener.setAttribute('aria-expanded','false');
+  const cand=[c.edBtn,c.openers&&c.openers.ed].find(o=>o&&o.offsetParent!==null);
+  (cand||c.title).focus();say('Edição concluída. '+c.who+'.');
+}
+$('edClose').addEventListener('click',()=>closeEd());
+$('edPlay').addEventListener('click',()=>btnPlay.click());
+new MutationObserver(()=>{$('edPlay').textContent=btnPlay.textContent}).observe(btnPlay,{childList:true,characterData:true,subtree:true});
 /* instruções */
 let helpOpen=false;
 const helpLayer=$('helpLayer');
@@ -2960,6 +2942,7 @@ $('btnRmCh').addEventListener('click',()=>{
 /* teclado */
 document.addEventListener('keydown',e=>{
   const t=e.target,tag=t.tagName;
+  if(e.key==='Escape'&&edOpen){e.preventDefault();closeEd();return}
   if(e.key==='Escape'&&projOpen){e.preventDefault();closeProj();return}
   if(e.key==='Escape'&&helpOpen){e.preventDefault();closeHelp();return}
   if(e.key==='Escape'&&menuOpen){e.preventDefault();closeMenu();return}
@@ -2975,7 +2958,7 @@ document.addEventListener('keydown',e=>{
     if(tag==='BUTTON'||tag==='INPUT'||tag==='SUMMARY'||tag==='A')return;
     e.preventDefault();if(R.state!=='rec')playing?pause():play();return;
   }
-  if(e.key>='1'&&e.key<='6'){showChannel(+e.key-1);return}
+  if(e.key>='1'&&e.key<='6'&&!edOpen){showChannel(+e.key-1);return}
   if(e.key==='x'||e.key==='X'){markNext();return}
   const s=t.closest&&t.closest('[data-ch]');
   if(s&&(e.key==='m'||e.key==='M'))chans[+s.getAttribute('data-ch')].muteBtn.click();

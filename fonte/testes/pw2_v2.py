@@ -24,7 +24,7 @@ async def main():
             print('resultado:', await say())
             print('canal 1:', await page.inner_text('#fc0'))
             # desfazer pela secao Edicao
-            await page.click('#edSec >> text=Desfazer'); await page.wait_for_timeout(200)
+            await page.evaluate("[...document.querySelectorAll('#edSec button')].find(b=>b.textContent==='Desfazer').click()"); await page.wait_for_timeout(200)
             print('desfazer:', await say(), '|', await page.inner_text('#fc0'))
             # so a selecao
             await page.select_option('#tuRange','sel')
