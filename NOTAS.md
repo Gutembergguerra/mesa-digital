@@ -72,3 +72,15 @@ Arquivos: exportar cada canal separado; formatos M4A, FLAC e OGG.
 Acessibilidade: sons curtos de confirmação opcionais; atalhos de teclado personalizáveis; aviso falado contínuo do nível de um canal.
 
 Calendário sugerido: 1.1 Novidades, renomear canais, salvar automático, fade e normalizar. 1.2 compressor e gate por canal, exportar canais separados, compartilhar. 1.3 marcadores falados, loudness, modelos de projeto. Depois: linha do tempo, vídeo e idiomas.
+
+## Estado atual: versão 1.1 de teste (out/2026)
+Publicada só na cópia de teste (pasta `teste-7k2m9x`). A raiz continua na 1.0 até o lançamento mensal.
+Novidades da 1.1: mesa abre sem canais com Adicionar canal e Remover canal (máximo 6); menu Projetos reordenado (Abrir, Novo, Salvar, Exportar e Importar); Edição com posição do cursor deslizante, seleção rápida, Dividir áudio (lista de partes, nome, WAV e ZIP) e Emendar áudios.
+Pendente: o autor testar com TalkBack e NVDA; ajustes pedidos por ele; depois lançar como oficial.
+
+## Código-fonte (pasta `fonte`)
+- `fonte/app-body.html`: fonte do app (um IIFE em JavaScript, funções puras entre `/*PURE-START*/` e `/*PURE-END*/`).
+- `fonte/build.py`: gera `site/index.html` e a cópia de teste. Os caminhos dentro dele são `/home/claude/mesa/...`: ajustar para a pasta onde estiver. Precisa de `site/` com sw.js, manifest e ícones (iguais aos da raiz deste repositório). Aumentar o número do cache de teste (`sl-mix-teste-vN`) a cada publicação.
+- `fonte/test.js` e `fonte/test_tune.js`: testes das funções puras (`node test.js`).
+- `fonte/testes/*.py`: testes de navegador (Playwright). `run6.py arquivo.py` adiciona 6 canais antes de rodar os testes antigos. Servem um site em `/home/claude/mesa/site`.
+- Publicar: copiar `site/teste-7k2m9x/*` para a pasta `teste-7k2m9x` deste repositório. O remote precisa continuar `https://github.com/Gutembergguerra/mesa-digital` (o proxy só autoriza o nome antigo; o push redireciona).
